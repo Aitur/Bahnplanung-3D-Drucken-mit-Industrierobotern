@@ -34,6 +34,7 @@ namespace Werkzeugbahnplanung
             m_Schichtrand = schichtrand;
             m_Modellrand = modellrand;
             m_koordinaten = new ushort[3];
+            m_orientierung = new double[3];
             m_koordinaten[0] = xKoord;
             m_koordinaten[1] = yKoord;
             m_koordinaten[2] = zKoord;
