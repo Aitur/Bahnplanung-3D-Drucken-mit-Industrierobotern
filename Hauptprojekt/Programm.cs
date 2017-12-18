@@ -58,7 +58,7 @@ namespace Werkzeugbahnplanung
                     {
                         string[] voxelparam = lines[i].Split(' ');
                         ushort[] voxelKoords = new ushort[3];
-                        float[] voxelOrientierung = new float[3];
+                        double[] voxelOrientierung = new double[3];
                         int schicht = 0;
                         //Für die Anzeige im Gnuplot werden werden ushorts benötigt. Diese können ohne Probleme später in booleans umgewandelt werden
                         ushort schichtrand = 0, modellrand = 0;
@@ -66,12 +66,12 @@ namespace Werkzeugbahnplanung
                         if (ushort.TryParse(voxelparam[0], out voxelKoords[0]) &&
                             ushort.TryParse(voxelparam[1], out voxelKoords[1]) &&
                             ushort.TryParse(voxelparam[2], out voxelKoords[2]) &&
-                            ushort.TryParse(voxelparam[3], out schichtrand) &&
-                            ushort.TryParse(voxelparam[4], out modellrand) &&
-                            Int32.TryParse(voxelparam[5], out schicht) &&
-                            float.TryParse(voxelparam[6], CultureInfo.InvariantCulture, out voxelOrientierung[0]) &&
-                            float.TryParse(voxelparam[7], CultureInfo.InvariantCulture, out voxelOrientierung[1]) &&
-                            float.TryParse(voxelparam[8], CultureInfo.InvariantCulture, out voxelOrientierung[2]))
+                            ushort.TryParse(voxelparam[6], out schichtrand) &&
+                            ushort.TryParse(voxelparam[7], out modellrand) &&
+                            Int32.TryParse(voxelparam[8], out schicht) &&
+                            double.TryParse(voxelparam[3], CultureInfo.InvariantCulture, out voxelOrientierung[0]) &&
+                            double.TryParse(voxelparam[4], CultureInfo.InvariantCulture, out voxelOrientierung[1]) &&
+                            double.TryParse(voxelparam[5], CultureInfo.InvariantCulture, out voxelOrientierung[2]))
                         {
                             //Erstelle anhand der Werte einen neuen Voxel in der Matrix 
                             //und in der entsprechenden Schicht
