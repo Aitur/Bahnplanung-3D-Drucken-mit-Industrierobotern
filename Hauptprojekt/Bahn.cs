@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 
 namespace Werkzeugbahnplanung
 {
@@ -9,29 +10,7 @@ namespace Werkzeugbahnplanung
         //Festlegen von Absetzkosten 
         private const int ABSETZKOSTEN = 20;
         private const int MARKIERKOSTEN = 100;               
-        /*
-         * Generiere eine Voxelliste für Testzwecke. Dabei wird der Schichtrand-Tag zufällig gesetzt.
-         */
-        public List<Voxel> GenerateTestData()
-        {
-            List<Voxel> testVoxel = new List<Voxel>();
-            Random randomizer = new Random();
-            bool randRandomizer = Convert.ToBoolean((randomizer.Next(-1, 1)));
-            
-           for (ushort x = 0; x < 5; x++)
-            {
-                for (ushort y = 0; y < 5; y++)
-                {
-                    for (ushort z = 0; z < 5; z++)
-                    {
-                        randRandomizer = Convert.ToBoolean((randomizer.Next(-1, 1)));
-                        testVoxel.Add(new Voxel(randRandomizer, false, x,y,z));
-                    }
-                }
-            }
-            return testVoxel;
-        }     
-        
+
         public List<List<Voxel>> SplitVoxelList(List<Voxel> voxelList)
         {
             List<Voxel> voxelListEins = new List<Voxel>();           
@@ -151,17 +130,16 @@ namespace Werkzeugbahnplanung
             {
                 uint index = druckfolge.GetPriorityItem(i);
                 Voxel v = new Voxel(voxelList[(int) index]);
-              
-                if((i + 1) < voxelList.Count)
-                {                      
-                    uint index2 = druckfolge.GetPriorityItem((i + 1));                   
-                    Voxel v2 = new Voxel(voxelList[(int)index2]);
-                    if(v.IsNeighbor6(v2))
+
+                if ((i + 1) < voxelList.Count)
+                {
+                    uint index2 = druckfolge.GetPriorityItem((i + 1));
+                    Voxel v2 = new Voxel(voxelList[(int) index2]);
+                    if (v.IsNeighbor6(v2))
                         distanzKosten += EudklidDistanzAusVoxelDistanz(v.VoxelKoordinatenDistanz(v2));
                     else
-                        distanzKosten += ABSETZKOSTEN+EudklidDistanzAusVoxelDistanz(v.VoxelKoordinatenDistanz(v2));
-                }       
-                        
+                        distanzKosten += ABSETZKOSTEN + EudklidDistanzAusVoxelDistanz(v.VoxelKoordinatenDistanz(v2));
+                }
             }
             return distanzKosten;
         }
@@ -191,7 +169,7 @@ namespace Werkzeugbahnplanung
         {
             Druckfolge _2optLösung = new Druckfolge(initialLösung);
             Druckfolge neueLösung = _2optLösung.DeepCopy();
-            for(int improve = 0; improve < 5; improve++)
+            for(int improve = 0; improve < 1; improve++)
             {
                 for (int i = 0; i < graph.GetVoxelKoordinaten().Count; i++)
                 {
@@ -207,7 +185,7 @@ namespace Werkzeugbahnplanung
             return _2optLösung;
         }
         
-        public void Bahnplanung(List<Voxel> voxelList)
+        public void Bahnplanung(List<Voxel> voxelList, double robotGeschwindigkeit, string path, string fileName, int layerIndex)
         {
             /*
              * Teilen der gesamten Voxelliste in Randvoxel und Rest, damit unterschiedliche Bahnen geplant werden können
@@ -230,57 +208,96 @@ namespace Werkzeugbahnplanung
             Druckfolge optimizedRand = new Druckfolge();
             Druckfolge optimizedRest = new Druckfolge();
             
-            for (int NNRUNS = 0; NNRUNS < 10; NNRUNS++)
+            for (int NNRUNS = 0; NNRUNS < 5; NNRUNS++)
             {
                 Random randomizer = new Random();                
-                int startNode = (randomizer.Next(0, restGraph.GetGraph().Count));
+                int startNodeRand = (randomizer.Next(0, randGraph.GetGraph().Count-1));
+                int startNodeRest = (randomizer.Next(0, restGraph.GetGraph().Count-1));
                 // Generieren einer NN-Tour mit random Startknoten
-                initialRand =NearestNeighbor(randGraph.DeepCopy(), startNode);
-                initialRest = NearestNeighbor(restGraph.DeepCopy(), startNode);
+                initialRand = NearestNeighbor(randGraph.DeepCopy(), startNodeRand);
+                initialRest = NearestNeighbor(restGraph.DeepCopy(), startNodeRest);
       
                 // Verbesserung der initialen Lösung durch 2-opt
                 _2optRand = _2Opt(initialRand, randGraph.DeepCopy());
                 _2optRest = _2Opt(initialRest, restGraph.DeepCopy());
-                
+
                 //Behalten des besten lokalen Optimums
                 if (_2optRand.GetGesamtkosten() < optimizedRand.GetGesamtkosten())
                     optimizedRand = _2optRand.DeepCopy();
                 if (_2optRest.GetGesamtkosten() < optimizedRest.GetGesamtkosten())
                     optimizedRest = _2optRest.DeepCopy();
-            }                                                
-            // Textoutput für Koordinate(X,Y,Z), Priority
-            string path = "F:\\Uni\\Uni WS 17_18\\Studienprojekt\\ProgrammierKram\\GraphUmwandlung";
-            using (StreamWriter outputFile = new StreamWriter(path + @"\Data.txt"))
-            {
-                uint index = 0;
-                for (int i = 0; i < restGraph.GetVoxelKoordinaten().Count; i++)
-                {
-                    index = optimizedRest.GetPriorityItem(i);
-                    outputFile.Write(restGraph.GetVoxelKoordinate(0, (int) index) + " " +
-                                     restGraph.GetVoxelKoordinate(1, (int) index) + " " +
-                                     restGraph.GetVoxelKoordinate(2, (int) index) + "\r\n");
-                }
-            }     
+            } 
             
-            using (StreamWriter outputFile = new StreamWriter(path + @"\DataINIT.txt"))
+            // Textoutput für Koordinate(X,Y,Z), Orientierung(Winkel1,Winkel2,Winkel3,absetzPunkt, Robotergeschwindigkeit)
+            List<bool> absetzPunkte = new List<bool>();
+            List<double> absetzDouble = new List<double>();
+            absetzPunkte.Add(false);
+            int index = 0;
+            int index2 = 0;
+            using (StreamWriter outputFile = new StreamWriter(path + fileName))
             {
-                uint index = 0;
-                for (int i = 0; i < restGraph.GetVoxelKoordinaten().Count; i++)
+                Voxel v = new Voxel(randGraph.GetVoxelKoordinatenAtIndex(0));
+                Voxel v2;
+                for (int i = 0; i < splitList[0].Count; i++)
                 {
-                    index = initialRest.GetPriorityItem(i);
-                    outputFile.Write(restGraph.GetVoxelKoordinate(0, (int) index) + " " +
-                                     restGraph.GetVoxelKoordinate(1, (int) index) + " " +
-                                     restGraph.GetVoxelKoordinate(2, (int) index) + "\r\n");
+                    if (absetzPunkte[i])
+                        absetzDouble.Add(1);
+                    else
+                        absetzDouble.Add(0);
+                    index = (int)optimizedRand.GetPriorityItem(i);                    
+                    v = new Voxel(randGraph.GetVoxelKoordinatenAtIndex(index));
+                    if( (i+1) < splitList[0].Count)
+                        index2 = (int)optimizedRand.GetPriorityItem(i + 1);
+                    if ((index2) < splitList[0].Count)
+                    {
+                        v2 = new Voxel(randGraph.GetVoxelKoordinatenAtIndex(index2));
+                        absetzPunkte.Add(v.IsNeighbor6(v2));
+                    } 
+                    outputFile.Write(randGraph.GetVoxelKoordinate(0, index) + " " +
+                                     randGraph.GetVoxelKoordinate(1, index) + " " +
+                                     randGraph.GetVoxelKoordinate(2, index) + " " +
+                                     splitList[0][index].getOrientierungAt(0) + " " +
+                                     splitList[0][index].getOrientierungAt(1) + " " +
+                                     splitList[0][index].getOrientierungAt(2) + " " +
+                                     robotGeschwindigkeit + " " +
+                                     absetzDouble[i] + " " + 
+                                     layerIndex + " " +
+                                     "\r\n");
                 }
+                outputFile.Write("\r\n");
+                absetzPunkte.Clear();
+                absetzDouble.Clear();
+                v2 = new Voxel(restGraph.GetVoxelKoordinatenAtIndex(0));
+                absetzPunkte.Add(v.IsNeighbor6(v2));
+
+                for (int i = 0; i < splitList[1].Count; i++)
+                {
+                    if (absetzPunkte[i])
+                        absetzDouble.Add(1);
+                    else
+                        absetzDouble.Add(0);
+                    index = (int)optimizedRest.GetPriorityItem(i);
+                    v = new Voxel(restGraph.GetVoxelKoordinatenAtIndex(index));
+                    if( (i+1) < splitList[1].Count)
+                        index2 = (int)optimizedRest.GetPriorityItem(i + 1);
+                    if ((index2) < splitList[1].Count)
+                    {
+                        v2 = new Voxel(restGraph.GetVoxelKoordinatenAtIndex(index2));
+                        absetzPunkte.Add(v.IsNeighbor6(v2));
+                    } 
+                    outputFile.Write(restGraph.GetVoxelKoordinate(0, index) + " " +
+                                     restGraph.GetVoxelKoordinate(1, index) + " " +
+                                     restGraph.GetVoxelKoordinate(2, index) + " " +
+                                     splitList[1][index].getOrientierungAt(0) + " " +
+                                     splitList[1][index].getOrientierungAt(1) + " " +
+                                     splitList[1][index].getOrientierungAt(2) + " " +
+                                     robotGeschwindigkeit + " " +
+                                     absetzDouble[i] + " " + 
+                                     layerIndex + " " +
+                                     "\r\n");
+                }
+                outputFile.Write("\r\n");
             }   
-        }
-        /*       
-        static void Main(string[] args)
-        {
-            Bahn bahn = new Bahn();
-            List<Voxel> voxelList = new List<Voxel>(bahn.GenerateTestData());
-            bahn.Bahnplanung(voxelList);
-        }
-        */
+        }      
     }  
 }
