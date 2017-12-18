@@ -36,6 +36,7 @@ namespace Werkzeugbahnplanung
             string[] lines = System.IO.File.ReadAllLines(@path);
             int boundB_x = 0, boundB_y = 0, boundB_z = 0, anzSchichten = 0;
             List<List<Voxel>> schichten = new List<List<Voxel>>();
+            culture = CultureInfo.CreateSpecificCulture("en-GB");
             //Versuche Werte aus der 1. Zeile zu parsen ansonsten fahre mit den nächsten Zeilen fort
             while(! readfirstline)
             {
@@ -69,9 +70,9 @@ namespace Werkzeugbahnplanung
                             ushort.TryParse(voxelparam[6], out schichtrand) &&
                             ushort.TryParse(voxelparam[7], out modellrand) &&
                             Int32.TryParse(voxelparam[8], out schicht) &&
-                            double.TryParse(voxelparam[3], System.Globalization.CultureInfo.InvariantCulture, out voxelOrientierung[0]) &&
-                            double.TryParse(voxelparam[4], System.Globalization.CultureInfo.InvariantCulture, out voxelOrientierung[1]) &&
-                            double.TryParse(voxelparam[5], System.Globalization.CultureInfo.InvariantCulture, out voxelOrientierung[2]))
+                            double.TryParse(voxelparam[3], culture, out voxelOrientierung[0]) &&
+                            double.TryParse(voxelparam[4], culture, out voxelOrientierung[1]) &&
+                            double.TryParse(voxelparam[5], culture, out voxelOrientierung[2]))
                         {
                             //Erstelle anhand der Werte einen neuen Voxel in der Matrix 
                             //und in der entsprechenden Schicht
