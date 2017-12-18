@@ -5,7 +5,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 
 namespace Werkzeugbahnplanung
 {
-    /*
+/*
  * Jeder Graph besteht aus zwei Teilen.
  * Die Graphliste, die die Kosten jeden Pfades von Knoten i zu Knoten j und von Knoten j zu Knoten i speichert.
  * (Speicherverbrauch könnte effektiv halbiert werden)
@@ -81,7 +81,6 @@ namespace Werkzeugbahnplanung
             return koordinaten[koor];
         }
 
-        
         //Setter
         public void SetGraph(List<List<double>> graph)
         {
