@@ -76,7 +76,7 @@ namespace Werkzeugbahnplanung
                             //Erstelle anhand der Werte einen neuen Voxel in der Matrix 
                             //und in der entsprechenden Schicht
                             voxelmatrix[voxelKoords[0], voxelKoords[1], voxelKoords[2]] = new Voxel(Convert.ToBoolean(schichtrand), Convert.ToBoolean(modellrand), voxelKoords[0], voxelKoords[1], voxelKoords[2], voxelOrientierung[0], voxelOrientierung[1], voxelOrientierung[2]);
-                            schichten[schicht].Add(voxelmatrix[voxelKoords[0], voxelKoords[1], voxelKoords[2]]);
+                            schichten[schicht - 1].Add(voxelmatrix[voxelKoords[0], voxelKoords[1], voxelKoords[2]]);
                         }
                         else
                         {
