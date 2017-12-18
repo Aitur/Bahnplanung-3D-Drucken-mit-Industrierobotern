@@ -9,6 +9,7 @@ namespace Werkzeugbahnplanung
         private ushort[] m_koordinaten;
         private double[] m_orientierung;
 
+        //Konstruktoren
         public Voxel()
         {
             m_Schichtrand = false;
@@ -40,27 +41,18 @@ namespace Werkzeugbahnplanung
             m_orientierung[1] = yOrient;
             m_orientierung[2] = zOrient;
         }
-
+        
         public Voxel(ushort[] koordinaten)
         {
             m_Schichtrand = false;
             m_Modellrand = false;
             m_koordinaten = koordinaten;
+            m_orientierung = new double[3]{0.0,0.0,0.0};
         }
-
-        public void setSchichtrand(bool value)
-        {
-            m_Schichtrand = value;
-        }
-
+        //Getter             
         public bool getSchichtrand()
         {
             return m_Schichtrand;
-        }
-
-        public void setModellrand(bool value)
-        {
-            m_Modellrand = value;
         }
 
         public bool getModellrand()
@@ -73,9 +65,26 @@ namespace Werkzeugbahnplanung
             return m_koordinaten;
         }
       
-         public float[] getOrientierung() {
+        public double[] getOrientierung() {
             return m_orientierung;
-         }
+        }
+
+        public double getOrientierungAt(int index)
+        {
+            return m_orientierung[index];
+        }
+
+
+        //Setter
+        public void setSchichtrand(bool value)
+        {
+            m_Schichtrand = value;
+        }
+
+        public void setModellrand(bool value)
+        {
+            m_Modellrand = value;
+        }
         
         //Prüfe ob zwei Voxel benachbart sind
         public bool IsNeighbor26(Voxel a)
@@ -95,8 +104,7 @@ namespace Werkzeugbahnplanung
                 (distanz[0] == 0 && distanz[1] == 1 && distanz[2] == 0) ||
                 (distanz[0] == 1 && distanz[1] == 0 && distanz[2] == 0))
                 return true;
-            else
-                return false;
+            return false;
         }
 
         // Erstelle ein Distanzarray der einzelnen Voxelkoordinaten für die Abstandsberechnung
