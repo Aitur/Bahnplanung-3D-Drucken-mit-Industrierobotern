@@ -241,7 +241,8 @@ namespace Werkzeugbahnplanung
                 for (int i = 0; i < splitList[0].Count; i++)
                 {
                     if (absetzPunkte[i])
-                        absetzDouble.Add(1);
+                        //Hier Extrusionsgeschwindigkeit eintragen
+                        absetzDouble.Add(36);
                     else
                         absetzDouble.Add(0);
                     index = (int)optimizedRand.GetPriorityItem(i);                    
@@ -264,16 +265,18 @@ namespace Werkzeugbahnplanung
                                      layerIndex + " " +
                                      "\r\n");
                 }
-                outputFile.Write("\r\n");
+                //outputFile.Write("\r\n");
                 absetzPunkte.Clear();
                 absetzDouble.Clear();
-                v2 = new Voxel(restGraph.GetVoxelKoordinatenAtIndex(0));
+                index = (int) optimizedRest.GetPriorityItem(0);
+                v2 = new Voxel(restGraph.GetVoxelKoordinatenAtIndex(index));
                 absetzPunkte.Add(v.IsNeighbor6(v2));
 
                 for (int i = 0; i < splitList[1].Count; i++)
                 {
                     if (absetzPunkte[i])
-                        absetzDouble.Add(1);
+                        //Hier Extrusionsgeschwindigkeit eintragen
+                        absetzDouble.Add(36);
                     else
                         absetzDouble.Add(0);
                     index = (int)optimizedRest.GetPriorityItem(i);
@@ -296,7 +299,7 @@ namespace Werkzeugbahnplanung
                                      layerIndex + " " +
                                      "\r\n");
                 }
-                outputFile.Write("\r\n");
+                //outputFile.Write("\r\n");
             }   
         }      
     }  
