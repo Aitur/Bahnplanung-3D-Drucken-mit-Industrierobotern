@@ -12,11 +12,12 @@ namespace Werkzeugbahnplanung
     {
         static void Main(string[] args)
         {
-            Voxelmodell v = Input("\\Galgen.txt");
+            string currentPath = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.FullName;
+            Voxelmodell v = Input(currentPath + "\\Galgen.txt");
             randverbreiterungtesten(v);
             testeMuster();
             Bahn bahn = new Bahn();
-            string path = "\\";
+            string path = currentPath+ "\\";
             string fileName = @"Bahnplanung.txt";
             double robotGeschwindigkeit = 30.0;           
             for (int i = 0; i < v.getSchichtenAnzahl(); i++)
