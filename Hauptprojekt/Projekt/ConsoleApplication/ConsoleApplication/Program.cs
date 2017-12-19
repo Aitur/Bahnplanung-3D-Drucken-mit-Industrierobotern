@@ -12,13 +12,13 @@ namespace Werkzeugbahnplanung
     {
         static void Main(string[] args)
         {
-            Voxelmodell v = Input("F:\\Uni\\Uni WS 17_18\\Studienprojekt\\ProgrammierKram\\Git\\Galgen.txt");
+            Voxelmodell v = Input("\\Galgen.txt");
             randverbreiterungtesten(v);
             testeMuster();
             Bahn bahn = new Bahn();
             string path = "\\";
             string fileName = @"Bahnplanung.txt";
-            double robotGeschwindigkeit = 10.0;           
+            double robotGeschwindigkeit = 30.0;           
             for (int i = 0; i < v.getSchichtenAnzahl(); i++)
             {
                 bahn.Bahnplanung(v.getListeAtIndex(i), robotGeschwindigkeit, path, fileName, (i+1));
