@@ -78,7 +78,7 @@ namespace Werkzeugbahnplanung
         }
         #endregion
     
-        #region Randverbreiterung
+#region Randverbreiterung
         /// <summary>
         /// Diese Methode ist dazu da, um den Modellrand (voll zu druckenden äußeren Bereich) verbreitern.
         /// Der Parameter randBreite soll die gewünschte resultierende Breite dieses Bereiches sein.
@@ -141,16 +141,18 @@ namespace Werkzeugbahnplanung
                 {
                     for (int z_div = -1; z_div <= 1; z_div++)
                     {
-                        try
+                        int neighbor_x = x + x_div;
+                        int neighbor_y = y + y_div;
+                        int neighbor_z = z + z_div;
+                        if (neighbor_x < 0 || neighbor_y < 0 || neighbor_z < 0 || neighbor_x > m_Voxelmatrix.GetUpperBound(0) || neighbor_y > m_Voxelmatrix.GetUpperBound(1) || neighbor_z > m_Voxelmatrix.GetUpperBound(2))
                         {
-                            if (a.IsNeighbor26(m_Voxelmatrix[x + x_div, y + y_div, z + z_div]))//nicht null)
-                            {
-                                nachbarn.Add(m_Voxelmatrix[x + x_div, y + y_div, z + z_div]);
-                            }
+                            continue;
                         }
-                        catch (IndexOutOfRangeException) {
+                        else if (a.IsNeighbor26(m_Voxelmatrix[x + x_div, y + y_div, z + z_div]))//nicht null)
+                        {
+                            nachbarn.Add(m_Voxelmatrix[x + x_div, y + y_div, z + z_div]);
+                        }
 
-                        }
                     }
                 }
             }
