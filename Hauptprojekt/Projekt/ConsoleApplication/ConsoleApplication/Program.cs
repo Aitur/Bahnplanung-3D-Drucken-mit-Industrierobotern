@@ -15,17 +15,26 @@ namespace Werkzeugbahnplanung
         {
             Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
             string currentPath = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.FullName;
+            
+            Console.WriteLine("Lese Modell ein...");
             Voxelmodell v = Input(currentPath + "\\Galgen.txt");
-            randverbreiterungtesten(v);
-            testeMuster();
+            Console.WriteLine("Modell eingelesen!");
             Bahn bahn = new Bahn();
+            Console.WriteLine("Verbreitere Rand...");
+            v.randVerbreiterung(3);
+            Console.WriteLine("Rand verbreitert!");
+            Console.WriteLine("Füge das Infill ein...");
+            v.InsertInfill();
+            Console.WriteLine("Infill eingefügt!");
             string path = currentPath+ "\\";
             string fileName = @"Bahnplanung.txt";
-            double robotGeschwindigkeit = 30.0;           
+            double robotGeschwindigkeit = 30.0;
+            Console.WriteLine("Plane die Bahn...");
             for (int i = 0; i < v.getSchichtenAnzahl(); i++)
             {
                 bahn.Bahnplanung(v.getListeAtIndex(i), robotGeschwindigkeit, path, fileName, (i+1));
             }
+            Console.WriteLine("Bahn geplant!");
         }
         #region Input-Method
         /*Funktion für eine Input-Textdatei
