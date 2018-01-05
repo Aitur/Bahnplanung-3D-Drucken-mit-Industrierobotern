@@ -248,7 +248,11 @@ namespace Werkzeugbahnplanung
                     optimizedRest = _2optRest.DeepCopy();
             } 
             
-            // Textoutput für Koordinate(X,Y,Z), Orientierung(Winkel1,Winkel2,Winkel3,absetzPunkt, Robotergeschwindigkeit)
+            /*
+             * Textoutput für Koordinate(X,Y,Z), Orientierung(Winkel1,Winkel2,Winkel3), Robotergeschwindigkeit,
+             * Extrusionsgeschwindigkeit vom Vorgänger zu diesem Punkt, Nummer der Schicht
+             */
+
             List<bool> absetzPunkte = new List<bool>();
             List<double> absetzDouble = new List<double>();
             absetzPunkte.Add(false);
