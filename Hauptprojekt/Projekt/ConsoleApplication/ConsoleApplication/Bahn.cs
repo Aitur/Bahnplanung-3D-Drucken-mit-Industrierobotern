@@ -39,9 +39,9 @@ namespace Werkzeugbahnplanung
         }
         /*
          * Umwandlung einer Voxelschicht zu einem Graphen. Anhand von Nachbarschaften werden kosten für die Kanten festgelegt, und absetzpunkte werden definiert.
-         * Ein Absetzpunkt ensteht immer wenn ein Voxel nicht direkt zu einem der 26 umliegenden (oder sich selbst) benachbart ist.
+         * Ein Absetzpunkt ensteht immer wenn ein Voxel nicht direkt zu einem anderen Voxel benachbart ist.
          */
-        private Graph_ VoxelToGraph(List<Voxel> voxel)
+        private Graph_ VoxelToGraph(List<Voxel> voxel, bool isInfill)
         {       
             Graph_ graph = new Graph_();
             
@@ -56,11 +56,21 @@ namespace Werkzeugbahnplanung
                      * Berechne für alle Benachbarten und nicht benachbarten Knoten jeden Knotens, die Distanz
                      * zu den anderen Knoten. Füge die VoxelKoordinaten hinzu. Nachbarschaftsfunktion je nach Druckwunsch auswählen
                     */
-                    if (v.IsNeighbor6(w))                  
-                        graphElemente.Add(EudklidDistanzAusVoxelDistanz(distanz));
-                    
-                    else                 
-                        graphElemente.Add(ABSETZKOSTEN + EudklidDistanzAusVoxelDistanz(distanz));                                     
+                    if (isInfill)
+                    {
+                        if (v.IsNeighbor26(w))                  
+                            graphElemente.Add(EudklidDistanzAusVoxelDistanz(distanz));                   
+                        else                 
+                            graphElemente.Add(ABSETZKOSTEN + EudklidDistanzAusVoxelDistanz(distanz));
+                    }
+                    else
+                    {
+                        if (v.IsNeighbor6(w))                  
+                            graphElemente.Add(EudklidDistanzAusVoxelDistanz(distanz));                   
+                        else                 
+                            graphElemente.Add(ABSETZKOSTEN + EudklidDistanzAusVoxelDistanz(distanz));
+                    }
+                                     
                 }
                 graph.AddGraphElement(graphElemente);             
                 graph.AddVoxelKoordinaten(v.getKoords());
@@ -124,7 +134,7 @@ namespace Werkzeugbahnplanung
             return initialLösung;
         }
 
-        public double CalculateDistanceAll(Druckfolge druckfolge, List<ushort[]> voxelList)
+        public double CalculateDistanceAll(Druckfolge druckfolge, List<ushort[]> voxelList, bool isInfill)
         {
             double distanzKosten = 0;
             for (int i = 0; i < voxelList.Count; i++)
@@ -145,7 +155,7 @@ namespace Werkzeugbahnplanung
             return distanzKosten;
         }
 
-        public void _2OptSwap(Druckfolge neueLösung,List<ushort[]> voxelList, int i, int j)
+        public void _2OptSwap(Druckfolge neueLösung, List<ushort[]> voxelList, bool isInfill, int i, int j)
         {
             Druckfolge swap = new Druckfolge(neueLösung.DeepCopy());
             for (int m = 0; m < i; m++)
@@ -163,10 +173,10 @@ namespace Werkzeugbahnplanung
             {
                 neueLösung.SetPriority((int)swap.GetPriorityItem(m),m);
             }           
-            neueLösung.SetGesamtkosten(CalculateDistanceAll(neueLösung, voxelList));
+            neueLösung.SetGesamtkosten(CalculateDistanceAll(neueLösung, voxelList, isInfill));
         }
         
-        public Druckfolge _2Opt(Druckfolge initialLösung, Graph_ graph)
+        public Druckfolge _2Opt(Druckfolge initialLösung, Graph_ graph, bool isInfill)
         {
             Druckfolge _2optLösung = new Druckfolge(initialLösung);
             Druckfolge neueLösung = _2optLösung.DeepCopy();
@@ -177,7 +187,7 @@ namespace Werkzeugbahnplanung
                     for (int j = i + 1; j < graph.GetVoxelKoordinaten().Count; j++)
                     {
                         neueLösung = _2optLösung.DeepCopy();
-                        _2OptSwap(neueLösung,graph.GetVoxelKoordinaten(), i, j);
+                        _2OptSwap(neueLösung,graph.GetVoxelKoordinaten(), isInfill, i, j);
                         if (!(neueLösung.GetGesamtkosten() > _2optLösung.GetGesamtkosten()))
                             _2optLösung = neueLösung.DeepCopy();
                     }
@@ -200,9 +210,13 @@ namespace Werkzeugbahnplanung
              */            
             List<List<Voxel>> splitList = new List<List<Voxel>>(SplitVoxelList(voxelList));
             
-            // Erstelle zwei Graphen : Randvoxel-Graph und Restvoxel-Graph
-            Graph_ randGraph = new Graph_(VoxelToGraph(splitList[0]));
-            Graph_ restGraph = new Graph_(VoxelToGraph(splitList[1]));
+            /*
+             * Erstelle zwei Graphen : Randvoxel-Graph und Restvoxel-Graph
+             * False und True zeigen hier jeweils nur an ob es sich bei den Verarbeitungsschritten um
+             * Infillvoxel handelt oder nicht, wegen der Nachbarschaftskontrolle
+             */
+            Graph_ randGraph = new Graph_(VoxelToGraph(splitList[0], false));
+            Graph_ restGraph = new Graph_(VoxelToGraph(splitList[1], true));
 
             // Erstellen der Druckfolgen
             Druckfolge initialRand = new Druckfolge();
@@ -224,8 +238,8 @@ namespace Werkzeugbahnplanung
                 initialRest = NearestNeighbor(restGraph.DeepCopy(), startNodeRest);
       
                 // Verbesserung der initialen Lösung durch 2-opt
-                _2optRand = _2Opt(initialRand, randGraph.DeepCopy());
-                _2optRest = _2Opt(initialRest, restGraph.DeepCopy());
+                _2optRand = _2Opt(initialRand, randGraph.DeepCopy(), false);
+                _2optRest = _2Opt(initialRest, restGraph.DeepCopy(), true);
 
                 //Behalten des besten lokalen Optimums
                 if (_2optRand.GetGesamtkosten() < optimizedRand.GetGesamtkosten())
@@ -292,7 +306,7 @@ namespace Werkzeugbahnplanung
                     if ((index2) < splitList[1].Count)
                     {
                         v2 = new Voxel(restGraph.GetVoxelKoordinatenAtIndex(index2));
-                        absetzPunkte.Add(v.IsNeighbor6(v2));
+                        absetzPunkte.Add(v.IsNeighbor26(v2));
                     } 
                     outputFile.Write(restGraph.GetVoxelKoordinate(0, index) + " " +
                                      restGraph.GetVoxelKoordinate(1, index) + " " +
