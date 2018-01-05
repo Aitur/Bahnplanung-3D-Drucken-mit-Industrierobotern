@@ -2,10 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace Werkzeugbahnplanung
 {
@@ -13,26 +10,40 @@ namespace Werkzeugbahnplanung
     {
         static void Main(string[] args)
         {
+            /*
+             * Konstanten
+             */            
             Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
+            string inputFile = @"Galgen.txt";
+            int randBreite = 3;
             string currentPath = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.FullName;
+            string path = currentPath+ "\\";
+            string fileName = @"Bahnplanung.txt";  
+            double robotGeschwindigkeit = 30.0;
+            double extrusionsGeschwindigkeit = 36.0;
+            /*
+             * Konstanten
+             */
             
             Console.WriteLine("Lese Modell ein...");
-            Voxelmodell v = Input(currentPath + "\\Galgen.txt");
+            Voxelmodell v = Input(path + inputFile);
             Console.WriteLine("Modell eingelesen!");
-            Bahn bahn = new Bahn();
+            
             Console.WriteLine("Verbreitere Rand...");
-            v.randVerbreiterung(3);
+            v.randVerbreiterung(randBreite);
             Console.WriteLine("Rand verbreitert!");
+            
             Console.WriteLine("Füge das Infill ein...");
             v.InsertInfill();
-            Console.WriteLine("Infill eingefügt!");
-            string path = currentPath+ "\\";
-            string fileName = @"Bahnplanung.txt";
-            double robotGeschwindigkeit = 30.0;
-            Console.WriteLine("Plane die Bahn...");
+            Console.WriteLine("Infill eingefügt!");     
+            
+            Console.WriteLine("Plane die Bahn...");    
+            Bahn bahn = new Bahn();
+            if (File.Exists(path + fileName))
+                File.Delete(path + fileName);
             for (int i = 0; i < v.getSchichtenAnzahl(); i++)
             {
-                bahn.Bahnplanung(v.getListeAtIndex(i), robotGeschwindigkeit, path, fileName, (i+1));
+                bahn.Bahnplanung(v.getListeAtIndex(i), robotGeschwindigkeit, extrusionsGeschwindigkeit, path, fileName, (i+1));
             }
             Console.WriteLine("Bahn geplant!");
         }

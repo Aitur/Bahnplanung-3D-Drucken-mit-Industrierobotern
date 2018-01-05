@@ -186,7 +186,12 @@ namespace Werkzeugbahnplanung
             return _2optLösung;
         }
         
-        public void Bahnplanung(List<Voxel> voxelList, double robotGeschwindigkeit, string path, string fileName, int layerIndex)
+        public void Bahnplanung(List<Voxel> voxelList, 
+                                double robotGeschwindigkeit, 
+                                double extrusionsGeschwindigkeit, 
+                                string path, 
+                                string fileName, 
+                                int layerIndex)
         {
             /*
              * Teilen der gesamten Voxelliste in Randvoxel und Rest, damit unterschiedliche Bahnen geplant werden können
@@ -243,7 +248,7 @@ namespace Werkzeugbahnplanung
                 {
                     if (absetzPunkte[i])
                         //Hier Extrusionsgeschwindigkeit eintragen
-                        absetzDouble.Add(36);
+                        absetzDouble.Add(extrusionsGeschwindigkeit);
                     else
                         absetzDouble.Add(0);
                     index = (int)optimizedRand.GetPriorityItem(i);                    
@@ -277,7 +282,7 @@ namespace Werkzeugbahnplanung
                 {
                     if (absetzPunkte[i])
                         //Hier Extrusionsgeschwindigkeit eintragen
-                        absetzDouble.Add(36);
+                        absetzDouble.Add(extrusionsGeschwindigkeit);
                     else
                         absetzDouble.Add(0);
                     index = (int)optimizedRest.GetPriorityItem(i);
@@ -300,7 +305,6 @@ namespace Werkzeugbahnplanung
                                      layerIndex + " " +
                                      "\r\n");
                 }
-                //outputFile.Write("\r\n");
             }   
         }      
     }  
