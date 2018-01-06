@@ -18,7 +18,9 @@ namespace Werkzeugbahnplanung
             int randBreite = 3;
             string currentPath = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.FullName;
             string path = currentPath+ "\\";
-            string fileName = @"Bahnplanung.txt";  
+            string fileName = @"Bahnplanung.txt";
+            int infillDensity = 20;
+            string infillType = "HexInfill"; //3DInfill oder HexInfill
             double robotGeschwindigkeit = 30.0;
             double extrusionsGeschwindigkeit = 36.0;
             /*
@@ -34,7 +36,7 @@ namespace Werkzeugbahnplanung
             Console.WriteLine("Rand verbreitert!");
             
             Console.WriteLine("Füge das Infill ein...");
-            v.InsertInfill();
+            v.InsertInfill(infillDensity,infillType);
             Console.WriteLine("Infill eingefügt!");     
             
             Console.WriteLine("Plane die Bahn...");    
@@ -43,6 +45,7 @@ namespace Werkzeugbahnplanung
                 File.Delete(path + fileName);
             for (int i = 0; i < v.getSchichtenAnzahl(); i++)
             {
+                Console.WriteLine("Plane die Bahn für Schicht " + i + "/" + v.getSchichtenAnzahl());
                 bahn.Bahnplanung(v.getListeAtIndex(i), robotGeschwindigkeit, extrusionsGeschwindigkeit, path, fileName, (i+1));
             }
             Console.WriteLine("Bahn geplant!");
