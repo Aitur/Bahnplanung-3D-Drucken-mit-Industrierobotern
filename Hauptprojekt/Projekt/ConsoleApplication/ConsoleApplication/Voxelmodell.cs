@@ -10,17 +10,15 @@ namespace Werkzeugbahnplanung
     public class Voxelmodell
     {
         private int m_AnzahlSchichten;
-        private Infill m_Boundingbox;
         //3-D Voxelmodell
         private Voxel[,,] m_Voxelmatrix;
         //Liste auf die entsprechenden Schichten-Listen
         private List<List<Voxel>> m_Schichten;
 
         //Konstruktor für Input-Funktion vorgesehen
-        public Voxelmodell(int anzahlSchichten,Voxel[,,] voxelmatrix, List<List<Voxel>> schichten, int infillDensity = 20, string infillType = "3DInfill")
+        public Voxelmodell(int anzahlSchichten,Voxel[,,] voxelmatrix, List<List<Voxel>> schichten)
         {
             m_AnzahlSchichten = anzahlSchichten;
-            m_Boundingbox = new Infill(infillDensity, infillType);
             m_Voxelmatrix = voxelmatrix;
             m_Schichten = schichten;
         }
@@ -52,8 +50,9 @@ namespace Werkzeugbahnplanung
         /*Funktion, die eine Boundingbox eines Infill-Musters
           (derselben Größe(!)) mit dem Voxelmodell merged.
           Bounding-Box : true = Voxel gesetzt im Infill */
-        public void InsertInfill()
+        public void InsertInfill(int infillDensity = 20, string infillType = "3DInfill")
         {
+            Infill m_Boundingbox = new Infill(infillDensity, infillType);
             ushort[] koords = new ushort[3];
             //Schleifen die über alle Voxel des Modells gehen
             foreach (List<Voxel> schicht in m_Schichten)
@@ -77,7 +76,7 @@ namespace Werkzeugbahnplanung
             }
         }
         #endregion
-    
+            
 #region Randverbreiterung
         /// <summary>
         /// Diese Methode ist dazu da, um den Modellrand (voll zu druckenden äußeren Bereich) verbreitern.
