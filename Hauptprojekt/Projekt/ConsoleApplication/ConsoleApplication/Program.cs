@@ -20,7 +20,8 @@ namespace Werkzeugbahnplanung
             string path = currentPath+ "\\";
             string fileName = @"Bahnplanung.txt";
             int infillDensity = 20;
-            string infillType = "HexInfill"; //3DInfill oder HexInfill
+            string infillType = "HexInfill"; //3DInfill oder HexInfill oder LineInfill oder Line3DInfill
+            int offset = 0; //für Infill
             double robotGeschwindigkeit = 30.0;
             double extrusionsGeschwindigkeit = 36.0;
             /*
@@ -36,7 +37,7 @@ namespace Werkzeugbahnplanung
             Console.WriteLine("Rand verbreitert!");
             
             Console.WriteLine("Füge das Infill ein...");
-            v.InsertInfill(infillDensity,infillType);
+            v.InsertInfill(infillDensity,infillType,offset);
             Console.WriteLine("Infill eingefügt!");     
             
             Console.WriteLine("Plane die Bahn...");    
