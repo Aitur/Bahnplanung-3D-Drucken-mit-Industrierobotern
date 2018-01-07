@@ -50,9 +50,9 @@ namespace Werkzeugbahnplanung
         /*Funktion, die eine Boundingbox eines Infill-Musters
           (derselben Größe(!)) mit dem Voxelmodell merged.
           Bounding-Box : true = Voxel gesetzt im Infill */
-        public void InsertInfill(int infillDensity = 20, string infillType = "3DInfill")
+        public void InsertInfill(int infillDensity = 20, string infillType = "3DInfill", int offset = 0)
         {
-            Infill m_Boundingbox = new Infill(infillDensity, infillType);
+            Infill m_Boundingbox = new Infill(infillDensity, infillType, offset);
             ushort[] koords = new ushort[3];
             //Schleifen die über alle Voxel des Modells gehen
             foreach (List<Voxel> schicht in m_Schichten)
