@@ -1,0 +1,5 @@
+F:\Uni\Uni WS 17_18\Studienprojekt\ProgrammierKram\Git\ConsoleApplication\ConsoleApplication\bin\Debug\ConsoleApplication.exe
+F:\Uni\Uni WS 17_18\Studienprojekt\ProgrammierKram\Git\ConsoleApplication\ConsoleApplication\bin\Debug\ConsoleApplication.pdb
+F:\Uni\Uni WS 17_18\Studienprojekt\ProgrammierKram\Git\ConsoleApplication\ConsoleApplication\obj\Debug\ConsoleApplication.csprojResolveAssemblyReference.cache
+F:\Uni\Uni WS 17_18\Studienprojekt\ProgrammierKram\Git\ConsoleApplication\ConsoleApplication\obj\Debug\ConsoleApplication.exe
+F:\Uni\Uni WS 17_18\Studienprojekt\ProgrammierKram\Git\ConsoleApplication\ConsoleApplication\obj\Debug\ConsoleApplication.pdb

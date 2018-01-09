@@ -14,10 +14,6 @@ namespace Werkzeugbahnplanung
         private int infill_offset;
         private string infill_type;
 
-        public int[,,] BaseCell { get => infill_baseCell; set => infill_baseCell = value; }
-        public int Density { get => infill_density; set => infill_density = value; }
-        public int Offset { get => infill_offset; set => infill_offset = value; }
-
         public Infill(int density, string type, int offset = 0) {
             if (density != 0)
             {
@@ -25,11 +21,12 @@ namespace Werkzeugbahnplanung
                 infill_density *= 2;
                 infill_baseCell = Generate_3DInfill();
                 infill_type = "Is_" + type;
+                infill_offset = offset;
                 if (type == "3DInfill")
                 {
                     Generate_3DInfill();
                 }
-                if (type == "HexInfill")
+                else if (type == "HexInfill")
                 {
                     Generate_HexInfill();
                 }
@@ -118,7 +115,7 @@ namespace Werkzeugbahnplanung
                 x = x % (2 * infill_density);
                 z = z % (2 * infill_density);
             }
-            return BaseCell[x,y,z];
+            return infill_baseCell[x,y,z];
         }
         
 
@@ -151,7 +148,7 @@ namespace Werkzeugbahnplanung
                 y += (infill_density - 1);
                 y = y % (2 * infill_density - 1);
             }
-            return BaseCell[x, y, 0];
+            return infill_baseCell[x, y, 0];
         }
         public int Is_LineInfill(int x, int y, int z)
         {

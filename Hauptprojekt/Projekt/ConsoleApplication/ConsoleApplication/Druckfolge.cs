@@ -1,24 +1,41 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
 
 namespace Werkzeugbahnplanung
 {
+    [Serializable]
     public class Druckfolge
     {
         private List<uint> m_priority;
-        private uint m_gesamtKosten;
+        private double m_gesamtKosten;
 
         //Konstruktoren
         public Druckfolge()
         {
             m_priority = new List<uint>();
-            m_gesamtKosten = 0;
+            m_gesamtKosten = Double.MaxValue;
         }
 
         public Druckfolge(Druckfolge druckfolge)
         {
-            m_priority = druckfolge.GetPriority();
-            m_gesamtKosten = druckfolge.GetGesamtkosten();
+            m_priority = new List<uint>(druckfolge.m_priority);
+            m_gesamtKosten = druckfolge.m_gesamtKosten;
         }
+        
+        //DeepCopy eines Graphen
+        public Druckfolge DeepCopy()
+        {            
+            using (var ms = new MemoryStream())
+            {
+                var formatter = new BinaryFormatter();
+                formatter.Serialize(ms, this);
+                ms.Position = 0;               
+                return (Druckfolge)formatter.Deserialize(ms);
+            }           
+        }
+
         
         //Getter
         public List<uint> GetPriority()
@@ -31,7 +48,7 @@ namespace Werkzeugbahnplanung
             return m_priority[i];
         }
 
-        public uint GetGesamtkosten()
+        public double GetGesamtkosten()
         {
             return m_gesamtKosten;
         }
@@ -42,23 +59,23 @@ namespace Werkzeugbahnplanung
             m_priority = priority;
         }
         
-        public void SetPriority(uint u, int i)
+        public void SetPriority(int u, int i)
         {
-            m_priority[i] = u;
+            m_priority[i] = (uint)u;
         }
 
-        public void SetGesamtkosten(uint u)
+        public void SetGesamtkosten(double u)
         {
             m_gesamtKosten = u;
         }
         
-        //Add falls set nicht verfügbar
+        //Add (für leere Listen)
         public void AddPriority(uint u)
         {
             m_priority.Add(u);
         }
 
-        //Addierer für Gesamtkosten
+        //Sonstiges
         public void SummiereGesamtkosten(uint u)
         {
             m_gesamtKosten += u;

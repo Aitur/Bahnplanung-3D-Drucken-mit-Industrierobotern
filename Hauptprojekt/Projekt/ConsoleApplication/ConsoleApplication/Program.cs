@@ -1,9 +1,8 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Threading;
 
 namespace Werkzeugbahnplanung
 {
@@ -11,9 +10,46 @@ namespace Werkzeugbahnplanung
     {
         static void Main(string[] args)
         {
-            Voxelmodell v = Input("Test3.txt");
-            randverbreiterungtesten(v);
-            testeMuster();
+            /*
+             * Konstanten
+             */            
+            Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
+            string inputFile = @"Galgen.txt";
+            int randBreite = 3;
+            string currentPath = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.FullName;
+            string path = currentPath+ "\\";
+            string fileName = @"Bahnplanung.txt";
+            int infillDensity = 20;
+            string infillType = "HexInfill"; //3DInfill oder HexInfill oder LineInfill oder Line3DInfill
+            int offset = 0; //für Infill
+            double robotGeschwindigkeit = 30.0;
+            double extrusionsGeschwindigkeit = 36.0;
+            /*
+             * Konstanten
+             */
+            
+            Console.WriteLine("Lese Modell ein...");
+            Voxelmodell v = Input(path + inputFile);
+            Console.WriteLine("Modell eingelesen!");
+            
+            Console.WriteLine("Verbreitere Rand...");
+            v.randVerbreiterung(randBreite);
+            Console.WriteLine("Rand verbreitert!");
+            
+            Console.WriteLine("Füge das Infill ein...");
+            v.InsertInfill(infillDensity,infillType,offset);
+            Console.WriteLine("Infill eingefügt!");     
+            
+            Console.WriteLine("Plane die Bahn...");    
+            Bahn bahn = new Bahn();
+            if (File.Exists(path + fileName))
+                File.Delete(path + fileName);
+            for (int i = 0; i < v.getSchichtenAnzahl(); i++)
+            {
+                Console.WriteLine("Plane die Bahn für Schicht " + i + "/" + v.getSchichtenAnzahl());
+                bahn.Bahnplanung(v.getListeAtIndex(i), robotGeschwindigkeit, extrusionsGeschwindigkeit, path, fileName, (i+1));
+            }
+            Console.WriteLine("Bahn geplant!");
         }
         #region Input-Method
         /*Funktion für eine Input-Textdatei
@@ -43,7 +79,7 @@ namespace Werkzeugbahnplanung
                 if (Int32.TryParse(tokens[0], out boundB_x) &&
                 Int32.TryParse(tokens[1], out boundB_y) &&
                 Int32.TryParse(tokens[2], out boundB_z) &&
-                Int32.TryParse(tokens[3], out anzSchichten))
+                Int32.TryParse(tokens[3], out anzSchichten) )
                 {
                     readfirstline = true; //Es werden keine weiteren Zeilen probiert
                     //Erstelle für jede Schicht eine eigene Liste
@@ -58,6 +94,7 @@ namespace Werkzeugbahnplanung
                     {
                         string[] voxelparam = lines[i].Split(' ');
                         ushort[] voxelKoords = new ushort[3];
+                        double[] voxelOrientierung = new double[3];
                         int schicht = 0;
                         //Für die Anzeige im Gnuplot werden werden ushorts benötigt. Diese können ohne Probleme später in booleans umgewandelt werden
                         ushort schichtrand = 0, modellrand = 0;
@@ -65,14 +102,17 @@ namespace Werkzeugbahnplanung
                         if (ushort.TryParse(voxelparam[0], out voxelKoords[0]) &&
                             ushort.TryParse(voxelparam[1], out voxelKoords[1]) &&
                             ushort.TryParse(voxelparam[2], out voxelKoords[2]) &&
-                            ushort.TryParse(voxelparam[3], out schichtrand) &&
-                            ushort.TryParse(voxelparam[4], out modellrand) &&
-                            Int32.TryParse(voxelparam[5], out schicht))
+                            ushort.TryParse(voxelparam[6], out schichtrand) &&
+                            ushort.TryParse(voxelparam[7], out modellrand) &&
+                            Int32.TryParse(voxelparam[8], out schicht) &&
+                            double.TryParse(voxelparam[3], NumberStyles.Any, CultureInfo.InvariantCulture, out voxelOrientierung[0]) &&
+                            double.TryParse(voxelparam[4], NumberStyles.Any, CultureInfo.InvariantCulture, out voxelOrientierung[1]) &&
+                            double.TryParse(voxelparam[5], NumberStyles.Any, CultureInfo.InvariantCulture, out voxelOrientierung[2]))
                         {
                             //Erstelle anhand der Werte einen neuen Voxel in der Matrix 
                             //und in der entsprechenden Schicht
-                            voxelmatrix[voxelKoords[0], voxelKoords[1], voxelKoords[2]] = new Voxel(Convert.ToBoolean(schichtrand),Convert.ToBoolean(modellrand), voxelKoords[0], voxelKoords[1], voxelKoords[2]);
-                            schichten[schicht].Add(voxelmatrix[voxelKoords[0], voxelKoords[1], voxelKoords[2]]);
+                            voxelmatrix[voxelKoords[0], voxelKoords[1], voxelKoords[2]] = new Voxel(Convert.ToBoolean(schichtrand), Convert.ToBoolean(modellrand), voxelKoords[0], voxelKoords[1], voxelKoords[2], voxelOrientierung[0], voxelOrientierung[1], voxelOrientierung[2]);
+                            schichten[schicht - 1].Add(voxelmatrix[voxelKoords[0], voxelKoords[1], voxelKoords[2]]);
                         }
                         else
                         {
@@ -91,7 +131,7 @@ namespace Werkzeugbahnplanung
             return null;
         }
         #endregion
-       #region Tests
+        #region Tests
         /// <summary>
         /// Testet Randverbreiterung; Funktioniert nicht mit null Werten...
         /// </summary>

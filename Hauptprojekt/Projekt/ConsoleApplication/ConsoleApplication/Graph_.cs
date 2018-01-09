@@ -1,15 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
 
 namespace Werkzeugbahnplanung
 {
+/*
+ * Jeder Graph besteht aus zwei Teilen.
+ * Die Graphliste, die die Kosten jeden Pfades von Knoten i zu Knoten j und von Knoten j zu Knoten i speichert.
+ * (Speicherverbrauch könnte effektiv halbiert werden)
+ * Und den Voxelkoordinaten, die die Knoten im Graph repräsentieren.
+ */
+    [Serializable]
     public class Graph_
     {
-        /*
-         Jeder Graph besteht aus zwei Teilen. Der Graphliste die per Index [i][j] angesprochen werden kann. Hierbei werden die Kosten vom Pfad von 
-         Knoten i zu Knoten j definiert/wiedergegeben.
-         Und jeder Graph eine Liste von Absetzpunkten, nach welchen der Roboter beim Drucken absetzen muss.
-         */
+
         private List<List<double>> m_graph;
         private List<ushort[]> m_VoxelKoordinaten;
         
@@ -19,20 +24,32 @@ namespace Werkzeugbahnplanung
             m_graph = new List<List<double>>();
             m_VoxelKoordinaten = new List<ushort[]>();
         }
-
+ 
         public Graph_(List<List<double>> graph, List<ushort[]> voxelKoordinaten)
         {
-            m_graph = graph;
-            m_VoxelKoordinaten = voxelKoordinaten;
+            m_graph = new List<List<double>>(graph);
+            m_VoxelKoordinaten = new List<ushort[]>(voxelKoordinaten);
         }
 
         public Graph_(Graph_ graph)
         {
-            m_graph = graph.GetGraph();
-            m_VoxelKoordinaten = graph.GetVoxelKoordinaten();
+            m_graph = graph.m_graph;
+            m_VoxelKoordinaten = graph.m_VoxelKoordinaten;
         }
 
-        //Getter für ganze Listen und einzelne Elemente
+        //DeepCopy eines Graphen
+        public Graph_ DeepCopy()
+        {            
+            using (var ms = new MemoryStream())
+            {
+                var formatter = new BinaryFormatter();
+                formatter.Serialize(ms, this);
+                ms.Position = 0;               
+                return (Graph_)formatter.Deserialize(ms);
+            }           
+        }
+
+        //Getter
         public List<List<double>> GetGraph()
         {
             return m_graph;
@@ -48,12 +65,12 @@ namespace Werkzeugbahnplanung
             return m_VoxelKoordinaten;
         }
 
-        public ushort[] GetVoxelKoordinaten(int i)
+        public ushort[] GetVoxelKoordinatenAtIndex(int i)
         {
             return m_VoxelKoordinaten[i];
         }
 
-        public ushort GetVoxelKoordinate(int i, ushort index)
+        public ushort GetVoxelKoordinate(ushort koor, int i)
         {
             /*
              *  index == 0 -> x-Koordinate
@@ -61,11 +78,10 @@ namespace Werkzeugbahnplanung
              *  index == 2 -> z-Koordinate
              */
             ushort[] koordinaten = m_VoxelKoordinaten[i];
-            return koordinaten[index];
+            return koordinaten[koor];
         }
 
-        
-        //Setter für ganze Listen und einzelne Elemente
+        //Setter
         public void SetGraph(List<List<double>> graph)
         {
             m_graph = graph;
@@ -75,13 +91,18 @@ namespace Werkzeugbahnplanung
         {
             m_graph[i][j] = d;
         }
+
+        public void SetVoxelKoordinaten(List<ushort[]> voxelKoordinaten)
+        {
+            m_VoxelKoordinaten = voxelKoordinaten;
+        }
         
-        public void SetVoxelKoordinaten(ushort[] k ,int i)
+        public void SetVoxelKoordinatenAtIndex(ushort[] k ,int i)
         {
             m_VoxelKoordinaten[i] = k;
         }
         
-        //Add falls set nicht verfügbar (leere liste)
+        //Add (für leere Listen)
         public void AddGraphElement(List<double> d)
         {
             m_graph.Add(d);

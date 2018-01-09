@@ -1,4 +1,4 @@
-using Werkzeugbahnplanung;
+﻿using Werkzeugbahnplanung;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,17 +10,15 @@ namespace Werkzeugbahnplanung
     public class Voxelmodell
     {
         private int m_AnzahlSchichten;
-        private Infill m_Boundingbox;
         //3-D Voxelmodell
         private Voxel[,,] m_Voxelmatrix;
         //Liste auf die entsprechenden Schichten-Listen
         private List<List<Voxel>> m_Schichten;
 
         //Konstruktor für Input-Funktion vorgesehen
-        public Voxelmodell(int anzahlSchichten,Voxel[,,] voxelmatrix, List<List<Voxel>> schichten, int infillDensity = 20, string infillType = "3DInfill")
+        public Voxelmodell(int anzahlSchichten,Voxel[,,] voxelmatrix, List<List<Voxel>> schichten)
         {
             m_AnzahlSchichten = anzahlSchichten;
-            m_Boundingbox = new Infill(infillDensity, infillType);
             m_Voxelmatrix = voxelmatrix;
             m_Schichten = schichten;
         }
@@ -37,12 +35,24 @@ namespace Werkzeugbahnplanung
             return m_Schichten;
         }
 
+        //Getter
+        public int getSchichtenAnzahl()
+        {
+            return m_AnzahlSchichten;
+        }
+
+        public List<Voxel> getListeAtIndex(int i)
+        {
+            return m_Schichten[i];
+        }
+        
         #region InsertInfill
         /*Funktion, die eine Boundingbox eines Infill-Musters
           (derselben Größe(!)) mit dem Voxelmodell merged.
           Bounding-Box : true = Voxel gesetzt im Infill */
-        public void InsertInfill()
+        public void InsertInfill(int infillDensity = 20, string infillType = "3DInfill", int offset = 0)
         {
+            Infill m_Boundingbox = new Infill(infillDensity, infillType, offset);
             ushort[] koords = new ushort[3];
             //Schleifen die über alle Voxel des Modells gehen
             foreach (List<Voxel> schicht in m_Schichten)
@@ -50,7 +60,7 @@ namespace Werkzeugbahnplanung
                 for (int i = 0; i < schicht.Count(); i++)
                 {
                     //Voxel die Teil des Randes sind kommen nicht in Frage
-                    if (schicht[i].getSchichtrand() != true) //#Question: Modellrand anstatt Schichtrand?
+                    if (schicht[i].getModellrand() != true) //#Question: Modellrand anstatt Schichtrand?
                     {
                         koords = schicht[i].getKoords();
                         //Falls kein Infill an Stelle des Voxels, lösche diesen
@@ -66,8 +76,8 @@ namespace Werkzeugbahnplanung
             }
         }
         #endregion
-    
-        #region Randverbreiterung
+            
+#region Randverbreiterung
         /// <summary>
         /// Diese Methode ist dazu da, um den Modellrand (voll zu druckenden äußeren Bereich) verbreitern.
         /// Der Parameter randBreite soll die gewünschte resultierende Breite dieses Bereiches sein.
@@ -84,14 +94,14 @@ namespace Werkzeugbahnplanung
                 //Die Verwendung einer foreach Schleife ist hier nicht möglich, da die Koodidaten des zu betrachtenden Voxels benötigt werden.
                 foreach (Voxel voxel in m_Voxelmatrix)
                 {
-                    ushort x = voxel.getKoords()[0];
-                    ushort y = voxel.getKoords()[1];
-                    ushort z = voxel.getKoords()[2];
                     /*Es sind nur Voxel relevant, die zum Rand gehören.
                     Leere Voxel müssen vorher aussortiert werden, weil wir nicht auf Attribute leerer Objekte zugreifen können.
                     Die zweite Bedingung wird nicht ausgeführt, wenn die erste nicht erfüllt ist -> Fehlervermeidung*/
                     if (voxel != null && voxel.getModellrand() == true)
                     {
+                        ushort x = voxel.getKoords()[0];
+                        ushort y = voxel.getKoords()[1];
+                        ushort z = voxel.getKoords()[2];
                         /*Jeder Voxel hat 6, 18 oder 26 Nachbarn, je nach dem ob man Nachbarschaften über Flächen, Kanten und/oder Ecken als Nachbarschaft ansieht.
                          Die Programmierung ist auf 26 ausgelegt.
                          Bei jedem möglichen Nachbar ist zu prüfen, ob dieser im Modell liegt(nicht out of range) und existiert (nicht null)
@@ -130,48 +140,24 @@ namespace Werkzeugbahnplanung
                 {
                     for (int z_div = -1; z_div <= 1; z_div++)
                     {
-                        try
+                        int neighbor_x = x + x_div;
+                        int neighbor_y = y + y_div;
+                        int neighbor_z = z + z_div;
+                        if (neighbor_x < 0 || neighbor_y < 0 || neighbor_z < 0 || neighbor_x > m_Voxelmatrix.GetUpperBound(0) || neighbor_y > m_Voxelmatrix.GetUpperBound(1) || neighbor_z > m_Voxelmatrix.GetUpperBound(2))
                         {
-                            if (a.IsNeighbor26(m_Voxelmatrix[x + x_div, y + y_div, z + z_div]))//nicht null)
-                            {
-                                nachbarn.Add(m_Voxelmatrix[x + x_div, y + y_div, z + z_div]);
-                            }
+                            continue;
                         }
-                        catch (IndexOutOfRangeException) {
+                        else if (a.IsNeighbor26(m_Voxelmatrix[x + x_div, y + y_div, z + z_div]))//nicht null)
+                        {
+                            nachbarn.Add(m_Voxelmatrix[x + x_div, y + y_div, z + z_div]);
+                        }
 
-                        }
                     }
                 }
             }
             return nachbarn;
         }
         #endregion
-        #region Infillmuster
-        public void Infillmustererzeugen(bool[,,] Musterbox)
-        {
-            //Gehe alle Voxel durch
-            foreach (List<Voxel> schicht in m_Schichten)
-            {
-                for (int i = 0; i<schicht.Count(); i++)
-                {
-                    Voxel v = schicht[i];
-                    //Voxel soll existieren und kein Modellrandvoxel sein, da diese immer alle gedruckt werden
-                    if (v != null && v.getModellrand() != true)
-                    {
-                        //Falls an der Voxel nicht zum Muster gehört
-                        int x = v.getKoords()[0], y = v.getKoords()[1], z = v.getKoords()[2];
-                        if (Musterbox[x, y, z] == false)
-                        {
-                            //Lösche diesen Voxel aus dem Modell
-                            m_Voxelmatrix[x, y, z] = null;
-                            //und aus der Schicht, weil das Löschen aus dem Modell scheinabr nicht ausreicht
-                            schicht.Remove(v);
-                        }
-                    }
-                }
-            }
-        }
-    #endregion
     }
    
 }
