@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Werkzeugbahnplanung
 {
@@ -10,19 +11,15 @@ namespace Werkzeugbahnplanung
     {
         static void Main(string[] args)
         {
-            
-             /*
+            /*
              * Konstanten
-             */       
+             */            
             Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
             string inputFile = @"Galgen.txt";
             int randBreite = 3;
             string currentPath = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.FullName;
             string path = currentPath+ "\\";
-            string fileName = @"Bahnplanung.txt";
-            int infillDensity = 20;
-            string infillType = "3DInfill"; //3DInfill oder HexInfill oder LineInfill oder Line3DInfill
-            int offset = 0; //für LineInfill
+            string fileName = @"Bahnplanung.txt";  
             double robotGeschwindigkeit = 30.0;
             double extrusionsGeschwindigkeit = 36.0;
             /*
@@ -38,20 +35,29 @@ namespace Werkzeugbahnplanung
             Console.WriteLine("Rand verbreitert!");
             
             Console.WriteLine("Füge das Infill ein...");
-            v.InsertInfill(infillDensity,infillType,offset);
+            v.InsertInfill();
             Console.WriteLine("Infill eingefügt!");     
             
-            Console.WriteLine("Plane die Bahn...");    
-            Bahn bahn = new Bahn();
+            Console.WriteLine("Plane die Bahn...");
+            List<Bahn> bahn = new List<Bahn>();
             if (File.Exists(path + fileName))
                 File.Delete(path + fileName);
-            for (int i = 0; i < v.getSchichtenAnzahl(); i++)
+            
+            for(int i = 0; i < v.getSchichtenAnzahl(); i++)
             {
-                Console.WriteLine("Plane die Bahn für Schicht " + i + "/" + v.getSchichtenAnzahl());
-                bahn.Bahnplanung(v.getListeAtIndex(i), robotGeschwindigkeit, extrusionsGeschwindigkeit, path, fileName, (i+1));
+                bahn.Add(new Bahn());
+            }
+            
+            Parallel.For(0, v.getSchichtenAnzahl(), j =>
+            {
+                bahn[j].SetBahn(bahn[j].Bahnplanung((v.getListeAtIndex(j)), j + 1));
+            });
+            bahn.Sort((x,y) => x.GetLayerIndex().CompareTo(y.GetLayerIndex()));
+            for (int i = 1; i < bahn.Count + 1; i++)
+            {
+                bahn[i - 1].Textoutput(robotGeschwindigkeit, extrusionsGeschwindigkeit, path, fileName);
             }
             Console.WriteLine("Bahn geplant!");
-
         }
         #region Input-Method
         /*Funktion für eine Input-Textdatei
@@ -184,29 +190,25 @@ namespace Werkzeugbahnplanung
         /// Testet Die Mustereinprägung in das Modell. Eingestellt auf 5*5*5 Muster.
         /// </summary>
         /// <param name="voxelmodell"></param>
-        public static void testeMuster(int infillDensity, String infillType,int offset)
+        public static void testeMuster()
         {
-            int x = 30, y = 30, z = 30;//Skaliert Linear ~17Sek für 1000000 Voxel;
-            List<List<Voxel>> schichten = new List<List<Voxel>>();       
+            int x = 30, y = 30, z = 30;
+            List<List<Voxel>> schichten = new List<List<Voxel>>();
+            schichten.Add(new List<Voxel>());
             Voxel[,,] bb = new Voxel[x, y, z];
-            for (ushort i = 0; i < x; i++)
-            {
-                schichten.Add(new List<Voxel>());
-            }
-            for (ushort i = 0; i < x; i++)
-            {
-                for (ushort j = 0; j < y; j++)
+            for (ushort i = 0; i < x; i++) {
+                for (ushort j = 0; j < x; j++)
                 {
-                    for (ushort k = 0; k < z; k++)
+                    for (ushort k = 0; k < x; k++)
                     {
                         Voxel v = new Voxel(false, false, i, j, k);
                         bb[i, j, k] = v;
-                        schichten[i].Add(v);
+                        schichten[0].Add(v);
                     }
                 }
             }
             Voxelmodell voxelmodell1 = new Voxelmodell(0, bb, schichten); ;
-            voxelmodell1.InsertInfill(infillDensity,infillType,offset);
+            voxelmodell1.InsertInfill();
             Voxel[,,] matrix = voxelmodell1.getVoxelmatrix();
             using (StreamWriter file = new StreamWriter(Path.Combine(Directory.GetCurrentDirectory(), "mustererzeugung.txt")))
             {
