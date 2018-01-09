@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Werkzeugbahnplanung
+namespace Werkzeugbahnplanung 
 {
     public class Voxelmodell
     {
@@ -55,25 +55,29 @@ namespace Werkzeugbahnplanung
             Infill m_Boundingbox = new Infill(infillDensity, infillType, offset);
             ushort[] koords = new ushort[3];
             //Schleifen die über alle Voxel des Modells gehen
-            foreach (List<Voxel> schicht in m_Schichten)
+            Parallel.For(0,m_Schichten.Count(), j =>
             {
-                for (int i = 0; i < schicht.Count(); i++)
+                Console.WriteLine("Prozessing infill for layer:" + j);
+                for (int i = 0; i < m_Schichten[j].Count(); i++)
                 {
                     //Voxel die Teil des Randes sind kommen nicht in Frage
-                    if (schicht[i].getModellrand() != true) //#Question: Modellrand anstatt Schichtrand?
+                    if (m_Schichten[j][i].getModellrand() != true) 
                     {
-                        koords = schicht[i].getKoords();
-                        //Falls kein Infill an Stelle des Voxels, lösche diesen
-                        //aus unserem Voxelmodell
-                        if (0 == m_Boundingbox.IsInfill(koords[0], koords[1], koords[2]))
+                        lock (m_Schichten)//Why, just why?
                         {
-                            m_Voxelmatrix[koords[0], koords[1], koords[2]] = null;
-                            schicht.Remove(schicht[i]);
-                            i--;
+                            koords = m_Schichten[j][i].getKoords();
+                            //Falls kein Infill an Stelle des Voxels, lösche diesen
+                            //aus unserem Voxelmodell
+                            if (0 == m_Boundingbox.IsInfill(koords[0], koords[1], koords[2]))
+                            {
+                                m_Voxelmatrix[koords[0], koords[1], koords[2]] = null;
+                                this.m_Schichten[j].Remove(this.m_Schichten[j][i]);
+                                i--;
+                            }
                         }
                     }
                 }
-            }
+            });
         }
         #endregion
             

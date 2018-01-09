@@ -19,16 +19,20 @@ namespace Werkzeugbahnplanung
             {
                 infill_density = (100 / density + 1) / 2;
                 infill_density *= 2;
-                infill_baseCell = Generate_3DInfill();
+                
                 infill_type = "Is_" + type;
                 infill_offset = offset;
                 if (type == "3DInfill")
                 {
-                    Generate_3DInfill();
+                    Console.WriteLine("Preparing 3DInfill");
+                    infill_baseCell = Generate_3DInfill();
+                    Console.WriteLine("Finished preparing 3DInfill");
                 }
                 else if (type == "HexInfill")
                 {
-                    Generate_HexInfill();
+                    Console.WriteLine("Preparing HexInfill");
+                    infill_baseCell = Generate_HexInfill();
+                    Console.WriteLine("Finished preparing HexInfill");
                 }
             }
             else {
@@ -38,7 +42,7 @@ namespace Werkzeugbahnplanung
         }
 
         public int IsInfill(int x, int y=0, int z=0) {
-            //prone to errors do not change this and keep return value and parameters for Is_ Methodes equal
+            //prone to errors do not change this and keep return value and parameters for Is_ all Methodes equal
             Object[] param = new Object[] { x, y, z };
             return Int32.Parse(typeof(Infill).GetMethod(infill_type).Invoke(this, param).ToString());
 
@@ -141,8 +145,8 @@ namespace Werkzeugbahnplanung
         public int Is_HexInfill(int x, int y, int z)
         {
             Boolean isEven = (0 == (x / (infill_density + (infill_density / 2) - 1)) % 2);
-            y = y % (2 * infill_density - 1);
             x = x % (infill_density + (infill_density / 2) - 1);
+            y = y % (2 * infill_density - 1);
             if (!isEven)
             {
                 y += (infill_density - 1);
