@@ -19,8 +19,7 @@ namespace Werkzeugbahnplanung
             {
                 infill_density = (100 / density + 1) / 2;
                 infill_density *= 2;
-                
-                infill_type = "Is_" + type;
+                infill_type = type;
                 infill_offset = offset;
                 if (type == "3DInfill")
                 {
@@ -36,70 +35,104 @@ namespace Werkzeugbahnplanung
                 }
             }
             else {
-                infill_type = "Is_Empty";
+                infill_type = "Empty";
             }
 
         }
 
         public int IsInfill(int x, int y=0, int z=0) {
-            //prone to errors do not change this and keep return value and parameters for Is_ all Methodes equal
-            Object[] param = new Object[] { x, y, z };
+            /*prone to errors do not change this and keep return value and parameters for all Is_ Methodes equal
+            Object[] param = new Object[] { x, y, z }; significant(10%) slowdown.
             return Int32.Parse(typeof(Infill).GetMethod(infill_type).Invoke(this, param).ToString());
-
+            */
+            switch (infill_type)
+            {
+                case "3DInfill":
+                    return Is_3DInfill(x, y, z);
+                case "HexInfill":
+                    return Is_HexInfill(x, y, z);
+                case "Empty":
+                    return Is_Empty(x, y, z);
+                case "LineInfill":
+                    return Is_LineInfill(x, y, z);
+                case "Line3DInfill":
+                    return Is_Line3DInfill(x, y, z);
+                default:
+                    //Non valid Infill Type
+                    return 0;
+            }
         }
 
         public int[,,] Generate_3DInfill()
         {
-            int[,,] Sample = new int[2 * infill_density, infill_density, 2 * infill_density];
+            int[,,] Sample = new int[2 * infill_density, 2*infill_density, 2 * infill_density];
             //Definition der Einzel Zelle
-            //Bottom Half
-            for (int depth = 0; depth <= infill_density / 2; ++depth)
+            int density_half = infill_density / 2;
+            //Octel
+            for (int height = 0; height < density_half; height++)//lower half
             {
-                for (int width = infill_density / 2 + depth; width < infill_density + infill_density / 2 - depth - 1; ++width)
+                for (int i = 0; i < density_half-height; i++)
                 {
-                    Sample[width, depth, 0] = 1;//Bottom flat triangle
+                    Sample[i, infill_density, height] = 1;//width
+                    Sample[infill_density, i, height] = 1;//depth
+                }
+                for (int i = 0; i <= density_half + height; i++)
+                {
+                    Sample[density_half + i - height, infill_density - i, height] = 1;//diagonal
                 }
             }
-            for (int height = 0; height < infill_density / 2; ++height)
-            {
-                for (int depth = 0; depth <= infill_density / 2 - height; ++depth)
-                {
-                    Sample[infill_density - 1, infill_density / 2 + depth + height-1, height] = 1;//Bottom standing triangle 
-                    Sample[infill_density*2-1, depth, infill_density - height] = 1;//right side standing triangle 
-                }
-                
-                for (int depth = 0; depth < infill_density / 2 + height; ++depth)//faces
-                {
-                    Sample[infill_density / 2 - height + depth, depth, height ] = 1;
-                    Sample[infill_density + infill_density / 2 + height - 1 - depth-1, depth, height] = 1;//lower half
 
-                    Sample[infill_density / 2 + height - depth - 1, infill_density - depth - 2, infill_density - height-1] = 1;
-                    Sample[infill_density + infill_density / 2 - height + depth-1, infill_density - depth-2, infill_density - height-1] = 1;//upper half
+            for (int height = 0; height <= density_half; height++)//upper half
+            {
+                for (int i = 0; i < density_half-height; i++)
+                {
+                    Sample[0, infill_density - i, infill_density - height] = 1;//width
+                    Sample[infill_density - i, 0, infill_density - height] = 1;//depth
+                }
+                for (int i = 0; i <= infill_density - height; i++)
+                {
+                    Sample[infill_density - height - i, i, density_half + height] = 1;//diagonal
                 }
             }
-            for (int height = 0; height <= infill_density / 2; ++height)
+
+            for (int i = 0; i <= density_half; i++)
             {
-                for (int width = infill_density-height-1; width <= infill_density + height; ++width)
+                for (int j = 0; j < i; j++)
                 {
-                    Sample[width, infill_density - 2, infill_density / 2 + height] = 1;//line
+                    Sample[density_half + i, infill_density - j, 0] = 1;//flat bottom surface
+                    Sample[density_half-i, j, infill_density] = 1;//flat top surface
                 }
+
             }
-            for (int width = 0; width < infill_density / 2; ++width)
+            //mirror alongside the x-axis
+            for (int width = 0; width < infill_density; width++)
             {
-                for (int depth = 0; depth < infill_density / 2 - width; ++depth)
-                {
-                    Sample[width, infill_density - 1 - depth, infill_density] = 1;//Mid flat Triangle
-                    Sample[2 * infill_density - 1 - width, infill_density - 2 - depth, infill_density] = 1;
-                }
-            }
-            //return Sample;
-            for (int i = 0; i < infill_density; i++)//mirror the lower half to the upper half
-            {
-                for (int y = 0; y < infill_density; ++y)
-                {
-                    for (int x = 0; x < 2*infill_density; ++x)
+                for (int depth = 0;depth <= infill_density ;depth++) {
+                    for (int height = 0; height <= infill_density; height++)
                     {
-                        Sample[x, y, 2 * infill_density - 1 - i] = Sample[x, y, i + 1];
+                        Sample[infill_density+width,depth,height]= Sample[infill_density -width,depth,height];
+                    }
+                }
+            }
+            //mirror alongsite the y-axis
+            for (int width = 0; width < infill_density*2; width++)
+            {
+                for (int depth = 0; depth < infill_density; depth++)
+                {
+                    for (int height = 0; height <= infill_density; height++)
+                    {
+                        Sample[width, infill_density + depth, height] = Sample[width, infill_density - depth, height];
+                    }
+                }
+            }
+            //mirror alogsite the z-axis
+            for (int width = 0; width < infill_density * 2; width++)
+            {
+                for (int depth = 0; depth < infill_density * 2; depth++)
+                {
+                    for (int height = 0; height < infill_density; height++)
+                    {
+                        Sample[width, depth, infill_density + height] = Sample[width, depth, infill_density - height];
                     }
                 }
             }
@@ -108,17 +141,9 @@ namespace Werkzeugbahnplanung
 
         public int Is_3DInfill(int x, int y, int z)
         {
-            Boolean isEven = (0 == (y/(infill_density-1))% 2);
-            y = y % (infill_density-1);
+            y = y % (2*infill_density);
             x = x % (2*infill_density);
             z = z % (2*infill_density);
-            if (!isEven)
-            {
-                x += (infill_density);
-                z += (infill_density);
-                x = x % (2 * infill_density);
-                z = z % (2 * infill_density);
-            }
             return infill_baseCell[x,y,z];
         }
         
