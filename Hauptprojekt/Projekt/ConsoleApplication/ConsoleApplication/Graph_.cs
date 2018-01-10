@@ -39,14 +39,11 @@ namespace Werkzeugbahnplanung
 
         //DeepCopy eines Graphen
         public Graph_ DeepCopy()
-        {            
-            using (var ms = new MemoryStream())
-            {
-                var formatter = new BinaryFormatter();
-                formatter.Serialize(ms, this);
-                ms.Position = 0;               
-                return (Graph_)formatter.Deserialize(ms);
-            }           
+        {    
+            Graph_ deepCopy = new Graph_();
+            deepCopy.m_graph = new List<List<double>>(GetGraph());
+            deepCopy.m_VoxelKoordinaten = new List<ushort[]>(m_VoxelKoordinaten);
+            return deepCopy;
         }
 
         //Getter

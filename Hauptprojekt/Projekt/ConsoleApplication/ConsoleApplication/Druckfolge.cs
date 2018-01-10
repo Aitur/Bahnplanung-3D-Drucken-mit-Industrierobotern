@@ -15,6 +15,12 @@ namespace Werkzeugbahnplanung
         public Druckfolge()
         {
             m_priority = new List<uint>();
+            m_gesamtKosten = 0;
+        }
+
+        public Druckfolge(double GesamtKosten)
+        {
+            m_priority = new List<uint>();
             m_gesamtKosten = Double.MaxValue;
         }
 
@@ -26,14 +32,11 @@ namespace Werkzeugbahnplanung
         
         //DeepCopy eines Graphen
         public Druckfolge DeepCopy()
-        {            
-            using (var ms = new MemoryStream())
-            {
-                var formatter = new BinaryFormatter();
-                formatter.Serialize(ms, this);
-                ms.Position = 0;               
-                return (Druckfolge)formatter.Deserialize(ms);
-            }           
+        {      
+            Druckfolge deepCopy = new Druckfolge();
+            deepCopy.m_priority = new List<uint>(GetPriority());
+            deepCopy.m_gesamtKosten = GetGesamtkosten();
+            return deepCopy; 
         }
 
         

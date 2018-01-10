@@ -132,20 +132,20 @@ namespace Werkzeugbahnplanung
          */
         private Graph_ MarkiereEigenknoten(Graph_ graph)
         {
-            Parallel.For(0, graph.GetGraph().Count, i =>
+            for (int i = 0; i < graph.GetGraph().Count; i++)
             {
                 graph.SetGraph(graph.GetGraphElement(i, i) + MARKIERKOSTEN, i, i);
-            });
+            }
             return graph;
         }
         
         //Markiert einen Knoten, für alle anderen Knoten in den Kostenlisten
         private static Graph_ MarkiereKnoten(int knoten, Graph_ graph)
         {
-            Parallel.For(0, graph.GetGraph().Count, i =>
+            for (int i = 0; i < graph.GetGraph().Count; i++)
             {
                 graph.SetGraph(graph.GetGraphElement(i, knoten) + MARKIERKOSTEN, i, knoten);
-            });
+            };
             graph.SetGraph(graph.GetGraphElement(knoten,knoten)-MARKIERKOSTEN, knoten, knoten);
             return graph;
         }
@@ -207,24 +207,21 @@ namespace Werkzeugbahnplanung
         {
             Druckfolge swap = new Druckfolge(neueLösung.DeepCopy());
             
-            Parallel.For(0, i, m =>
+            for (int m = 0; m < i; m++)
             {
                 neueLösung.SetPriority((int) swap.GetPriorityItem(m), m);
-            });
-
-            int decrease = 0;
-            
+            }
+            int decrease = 0;            
             for (int m = i; m <= j; m++)
             {
                     neueLösung.SetPriority((int)swap.GetPriorityItem(j-decrease),m);
                     decrease++;
             }
-            Parallel.For(j + 1, neueLösung.GetPriority().Count, m =>
+            for (int m = j + 1; m < neueLösung.GetPriority().Count; m++)
             {
                 neueLösung.SetPriority((int)swap.GetPriorityItem(m),m);
-            });
-          
-            neueLösung.SetGesamtkosten(CalculateDistanceAll(neueLösung, voxelList, isInfill));
+            }
+            neueLösung.SetGesamtkosten(CalculateDistanceAll(neueLösung, voxelList,isInfill));
         }
         
         public Druckfolge _2Opt(Druckfolge initialLösung, Graph_ graph, bool isInfill)
@@ -232,10 +229,14 @@ namespace Werkzeugbahnplanung
             Druckfolge _2optLösung = new Druckfolge(initialLösung);
             Druckfolge neueLösung = _2optLösung.DeepCopy();
         
-            for (int i = 0; i < graph.GetVoxelKoordinaten().Count; i++)
+            /*
+             * Instead of iterating through every possible value for i and j, only a few are taken as most of the time
+             * more values don't yield significantly better results while the computing time is going up exponentially.
+             */
+            for (int i = 0; i < graph.GetVoxelKoordinaten().Count; i += graph.GetVoxelKoordinaten().Count / 10)
             {
 
-                for (int j = i + 1; j < graph.GetVoxelKoordinaten().Count; j++)
+                for (int j =  1; j < graph.GetVoxelKoordinaten().Count; j += graph.GetVoxelKoordinaten().Count / 40)
                 {
                     neueLösung = _2optLösung.DeepCopy();
                     _2OptSwap(neueLösung,graph.GetVoxelKoordinaten(), isInfill, i, j);
@@ -270,10 +271,10 @@ namespace Werkzeugbahnplanung
             Druckfolge _2optRand = new Druckfolge();
             Druckfolge _2optRest = new Druckfolge();
             
-            Druckfolge optimizedRand = new Druckfolge();
-            Druckfolge optimizedRest = new Druckfolge();
+            Druckfolge optimizedRand = new Druckfolge(0.0);
+            Druckfolge optimizedRest = new Druckfolge(0.0);
 
-            Parallel.For(0, 5, NNRUNS =>
+            for (int NNRUNS = 0; NNRUNS < 5; NNRUNS++)
             {
                 Random randomizer = new Random();                
                 int startNodeRand = (randomizer.Next(0, randGraph.GetGraph().Count-1));
@@ -281,7 +282,7 @@ namespace Werkzeugbahnplanung
                 // Generieren einer NN-Tour mit random Startknoten
                 initialRand = NearestNeighbor(randGraph.DeepCopy(), startNodeRand);
                 initialRest = NearestNeighbor(restGraph.DeepCopy(), startNodeRest);
-      
+
                 // Verbesserung der initialen Lösung durch 2-opt
                 _2optRand = _2Opt(initialRand, randGraph.DeepCopy(), false);
                 _2optRest = _2Opt(initialRest, restGraph.DeepCopy(), true);
@@ -290,8 +291,9 @@ namespace Werkzeugbahnplanung
                 if (_2optRand.GetGesamtkosten() < optimizedRand.GetGesamtkosten())
                     optimizedRand = _2optRand.DeepCopy();
                 if (_2optRest.GetGesamtkosten() < optimizedRest.GetGesamtkosten())
-                    optimizedRest = _2optRest.DeepCopy();
-            });
+                    optimizedRest = _2optRest.DeepCopy();                
+            }
+            
             Bahn bahn = new Bahn(splitList, randGraph, restGraph, optimizedRand, optimizedRest, layerIndex);
             return bahn;
         }

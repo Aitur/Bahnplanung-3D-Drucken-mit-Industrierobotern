@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.Eventing;
 using System.Globalization;
 using System.IO;
 using System.Threading;
@@ -50,7 +51,8 @@ namespace Werkzeugbahnplanung
             
             Parallel.For(0, v.getSchichtenAnzahl(), j =>
             {
-                bahn[j].SetBahn(bahn[j].Bahnplanung((v.getListeAtIndex(j)), j + 1));
+                Console.WriteLine("Processing Tool path for layer:" + j);
+                    bahn[j].SetBahn(bahn[j].Bahnplanung((v.getListeAtIndex(j)), j + 1));
             });
             bahn.Sort((x,y) => x.GetLayerIndex().CompareTo(y.GetLayerIndex()));
             for (int i = 1; i < bahn.Count + 1; i++)
