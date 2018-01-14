@@ -233,7 +233,7 @@ namespace Werkzeugbahnplanung
              * Instead of iterating through every possible value for i and j, only a few are taken as most of the time
              * more values don't yield significantly better results while the computing time is going up exponentially.
              */
-            for (int i = 0; i < graph.GetVoxelKoordinaten().Count; i += graph.GetVoxelKoordinaten().Count / 10)
+            for (int i = 0; i < graph.GetVoxelKoordinaten().Count; i += graph.GetVoxelKoordinaten().Count / 20)
             {
 
                 for (int j =  1; j < graph.GetVoxelKoordinaten().Count; j += graph.GetVoxelKoordinaten().Count / 40)
