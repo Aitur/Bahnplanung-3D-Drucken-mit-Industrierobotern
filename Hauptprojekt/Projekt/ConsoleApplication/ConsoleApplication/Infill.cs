@@ -9,20 +9,23 @@ namespace Werkzeugbahnplanung
 {
     class Infill
     {
+        //baseCell is a non Mandatory variable meant to represent a simple pattern which will be repeated to fill the voxelmodell
         private int[,,] infill_baseCell;
         private int infill_density;
         private int infill_offset;
         private string infill_type;
 
         public Infill(int density, string type, int offset = 0) {
-            if (density != 0)
+            if (density != 0)//if there are no Voxel meant to be filled set the type to empty, to avoid unneccesary computation
             {
-                infill_density = (100 / density + 1) / 2;
-                infill_density *= 2;
+                //the infills density is fit to the corresponding functions, which is slightly different for 3DInfill as it has to be round up in case it is uneven
+                infill_density = 100 / density;
                 infill_type = type;
                 infill_offset = offset;
-                if (type == "3DInfill")
+                if (type == "3DInfill")//in case the infill is created using tesselation 2 or 3Dimensional, the pattern will be generated here
                 {
+                    infill_density = (infill_density + 1) / 2;
+                    infill_density *= 2;
                     Console.WriteLine("Preparing 3DInfill");
                     infill_baseCell = Generate_3DInfill();
                     Console.WriteLine("Finished preparing 3DInfill");
@@ -39,12 +42,18 @@ namespace Werkzeugbahnplanung
             }
 
         }
-
+            
+        /*
+        This Method is used for all types of infill, this 'interface' is used because overwriting the function using reflection:
+        '
+            Object[] param = new Object[] { x, y, z }; 
+            Int32.Parse(typeof(Infill).GetMethod(infill_type).Invoke(this, param).ToString());
+        '
+            yields a significant(10%) slowdown.
+        The use of optional parameters only serves to add flexibility
+        The Method defaults to 0 which is equal to the result of Is_Empty.    
+        */
         public int IsInfill(int x, int y=0, int z=0) {
-            /*prone to errors do not change this and keep return value and parameters for all Is_ Methodes equal
-            Object[] param = new Object[] { x, y, z }; significant(10%) slowdown.
-            return Int32.Parse(typeof(Infill).GetMethod(infill_type).Invoke(this, param).ToString());
-            */
             switch (infill_type)
             {
                 case "3DInfill":
@@ -63,13 +72,19 @@ namespace Werkzeugbahnplanung
             }
         }
 
+        //This Method depends on density,
+        //and is used to generate a sample Truncated octahedron with attatchments to properly execute Is_3DInfill.
         public int[,,] Generate_3DInfill()
         {
+            //The Truncated octahedron with attachments would be 2times+1 the density in all dimensions in size 
+            //but to avoid overlapping the samples will be repeated beginning with their intersections, 
+            //which (the intersections) therefore do not have to be part of the sample.
             int[,,] Sample = new int[2 * infill_density, 2*infill_density, 2 * infill_density];
-            //Definition der Einzel Zelle
             int density_half = infill_density / 2;
-            //Octel
-            for (int height = 0; height < density_half; height++)//lower half
+            
+            //The following paragraph will create a bottom corner of the Sample in two parts as well as top and bottom.
+            //removing one of the lines inside the loops will result in one face or attatchment to be removed 
+            for (int height = 0; height < density_half; height++)//lower part
             {
                 for (int i = 0; i < density_half-height; i++)
                 {
@@ -82,7 +97,7 @@ namespace Werkzeugbahnplanung
                 }
             }
 
-            for (int height = 0; height <= density_half; height++)//upper half
+            for (int height = 0; height <= density_half; height++)//upper part
             {
                 for (int i = 0; i < density_half-height; i++)
                 {
@@ -95,7 +110,7 @@ namespace Werkzeugbahnplanung
                 }
             }
 
-            for (int i = 0; i <= density_half; i++)
+            for (int i = 0; i <= density_half; i++)//top and bottom
             {
                 for (int j = 0; j < i; j++)
                 {
@@ -104,8 +119,10 @@ namespace Werkzeugbahnplanung
                 }
 
             }
+            
+            //In this paragraph the previously generated corner will be mirrored to create the symmetrical Truncated octahedron
             //mirror alongside the x-axis
-            for (int width = 0; width < infill_density; width++)
+            for (int width = 0; width < infill_density; width++)//This is deliberately inaccurate to realise leaving out the intersections between samples
             {
                 for (int depth = 0;depth <= infill_density ;depth++) {
                     for (int height = 0; height <= infill_density; height++)
@@ -114,10 +131,10 @@ namespace Werkzeugbahnplanung
                     }
                 }
             }
-            //mirror alongsite the y-axis
+            //mirror everything alongsite the y-axis
             for (int width = 0; width < infill_density*2; width++)
             {
-                for (int depth = 0; depth < infill_density; depth++)
+                for (int depth = 0; depth < infill_density; depth++)//deliberately inaccurate
                 {
                     for (int height = 0; height <= infill_density; height++)
                     {
@@ -130,7 +147,7 @@ namespace Werkzeugbahnplanung
             {
                 for (int depth = 0; depth < infill_density * 2; depth++)
                 {
-                    for (int height = 0; height < infill_density; height++)
+                    for (int height = 0; height < infill_density; height++)//deliberately inaccurate
                     {
                         Sample[width, depth, infill_density + height] = Sample[width, depth, infill_density - height];
                     }
@@ -139,6 +156,8 @@ namespace Werkzeugbahnplanung
             return Sample;
         }
 
+        //This Method depends on the base and density, it calculates whether the base would be filled for a voxel with the coordinates y, x, z
+        //It is fit to work with a base created using Generate_3DInfill
         public int Is_3DInfill(int x, int y, int z)
         {
             y = y % (2*infill_density);
@@ -147,16 +166,20 @@ namespace Werkzeugbahnplanung
             return infill_baseCell[x,y,z];
         }
         
-
+        //This Method depends on density,
+        //and is used to generate a sample half hexagon to properly execute Is_HexInfill.
+        //It works with a similar approach to Generate_3DInfill
         public int[,,] Generate_HexInfill()
         {
+
             int half_density = infill_density / 2;
             int[,,] Sample = new int[(infill_density+half_density), 2*infill_density , 1];
-            //Definition der Einzel Zelle
+            
             for (int width = 0; width < infill_density; width++)
             {
                 Sample[half_density + width, 0, 0] = 1;
             }
+            
             for (int width = 0; width < half_density; width++)
             {
                 Sample[width, (half_density-width - 1) * 2, 0] = 1;
@@ -164,9 +187,12 @@ namespace Werkzeugbahnplanung
                 Sample[width, 2*infill_density-((half_density - width - 1) * 2 + 1), 0] = 1;
                 Sample[width, 2 * infill_density - ((half_density - width - 1) * 2 + 2), 0] = 1;
             }
+            
             return Sample;
         }
 
+        //This Method depends on the base and density, it calculates whether the base would be filled for a voxel with the coordinates y, x, z
+        //for the base generated by Generate_HexInfill this tesselation requires a shift in its repetition alongsite the x-axis
         public int Is_HexInfill(int x, int y, int z)
         {
             Boolean isEven = (0 == (x / (infill_density + (infill_density / 2) - 1)) % 2);
@@ -179,6 +205,8 @@ namespace Werkzeugbahnplanung
             }
             return infill_baseCell[x, y, 0];
         }
+        
+        //This Method depends on the density, it calculates if a voxel with the coordinates y, x, z would be part of straight lines filling the Model axis aligned
         public int Is_LineInfill(int x, int y, int z)
         {
             if (x % (infill_density * 2) == infill_offset || y % (infill_density * 2) == infill_offset) {
@@ -187,9 +215,10 @@ namespace Werkzeugbahnplanung
             return 0;
         }
 
+        //This Method depends on the density, it calculates if a voxel with the coordinates y, x, z would be part of infill consisting of stacked cubes.
+        //If Offset is not 0 an experimental 3D Infill will be used.
         public int Is_Line3DInfill(int x, int y, int z)
         {
-            //figure out how too turn offset in ° -> 45° tilt:
             if (infill_offset != 0) {
                 if (0 == (z+y+(infill_density*4-x)) % (infill_density * 4)) {
                     return 1;
@@ -207,6 +236,8 @@ namespace Werkzeugbahnplanung
             }
             return 0;
         }
+        
+        //This Method will lead to the creation of no infill 
         public int Is_Empty(int x, int y, int z)
         {
             return 0;
