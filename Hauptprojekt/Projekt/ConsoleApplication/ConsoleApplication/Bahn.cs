@@ -8,9 +8,16 @@ using System.Threading.Tasks;
 namespace Werkzeugbahnplanung
 {
     public class Bahn
-    {
+    {                               
+        //Parameter die sinnvollerweise nicht in der Main stehen sollten
+        private const int ABSETZKOSTEN = 20;
+        private const int MARKIERKOSTEN = 100;
+        private const int ANZAHL_NNRUNS = 5;
+
+        
         /*
-         * Bahnobjekt mit Parametern
+         * Bahnobjekt mit Parametern, wird generiert, damit die Output Funktion dieses Objekt als Input erhalten kann
+         * Wird benötigt, da so die Lösungsgeneration für jede einzelne Schicht parallelisiert werden kann.
          */
         private List<List<Voxel>> m_splitList;
         private Graph_ m_randGraph;
@@ -54,11 +61,10 @@ namespace Werkzeugbahnplanung
         }
         
         
-        
-        //Festlegen von Absetzkosten 
-        private const int ABSETZKOSTEN = 20;
-        private const int MARKIERKOSTEN = 100;               
-
+        /*
+         * Die Funktion nimmt eine Voxelliste entgegen und trennt diese
+         * in eine Randvoxel und nicht-randvoxel Liste auf.
+         */
         public List<List<Voxel>> SplitVoxelList(List<Voxel> voxelList)
         {
             List<Voxel> voxelListEins = new List<Voxel>();           
@@ -78,14 +84,20 @@ namespace Werkzeugbahnplanung
         }
 
 
+        /*
+         * Bildet die euklidische Distanz zwischen zwei Voxel, benutzt aber als Input die
+         * drei einzelnen Koordinatendistanzen
+         */
         public double EudklidDistanzAusVoxelDistanz(int[] distanz)
         {
             return (Math.Sqrt(Math.Pow(distanz[0], 2) + 
                               Math.Pow(distanz[1], 2) + 
                               Math.Pow(distanz[2], 2)));
         }
+        
+        
         /*
-         * Umwandlung einer Voxelschicht zu einem Graphen. Anhand von Nachbarschaften werden kosten für die Kanten festgelegt, und absetzpunkte werden definiert.
+         * Umwandlung einer Voxelschicht zu einem Graphen. Anhand von Nachbarschaften werden kosten für die Kanten festgelegt.
          * Ein Absetzpunkt ensteht immer wenn ein Voxel nicht direkt zu einem anderen Voxel benachbart ist.
          */
         private Graph_ VoxelToGraph(List<Voxel> voxel, bool isInfill)
@@ -126,9 +138,10 @@ namespace Werkzeugbahnplanung
             return graph;
         }
 
+        
         /*
-         * Markiert die Kante eines Knotens zu sich selbst, unter Berücksichtigung
-         * der Matrixeigenschaft der Liste von Listen.
+         * Markiert die Kante eines Knotens zu sich selbst damit diese nicht als Weg eingetragen wird,
+         * unter Berücksichtigung der Matrixeigenschaft der Liste von Listen.
          */
         private Graph_ MarkiereEigenknoten(Graph_ graph)
         {
@@ -139,7 +152,12 @@ namespace Werkzeugbahnplanung
             return graph;
         }
         
-        //Markiert einen Knoten, für alle anderen Knoten in den Kostenlisten
+        
+        /*
+         * Markiert alle Kanten zu einem bestimmten Knoten, damit dieser Knoten nicht nochmals
+         * angefahren wird. 
+         */
+        
         private static Graph_ MarkiereKnoten(int knoten, Graph_ graph)
         {
             for (int i = 0; i < graph.GetGraph().Count; i++)
@@ -150,7 +168,15 @@ namespace Werkzeugbahnplanung
             return graph;
         }
         
-        // Generieren einer ersten Bahnplanungslösung mit dem Nearest-Neighbor Verfahren
+        
+        /*
+         * Generieren einer ersten Bahnplanungslösung mit dem Nearest-Neighbor Verfahren
+         * 1. Es wird ein Ausgangsknoten festgelegt
+         * 2. Von diesem Knoten aus wird die Kante mit den geringsten Kosten gesucht
+         * 3. Der Knoten der an dieser Kante hängt wird als nächstes in die Prioritätsliste einsortiert
+         * 4. Die Kosten werden Summiert
+         * 5. Wiederhole 2. bis keine Knoten mehr vorhanden sind
+         */
         private Druckfolge NearestNeighbor(Graph_ graph, int startNode)
         {                
             Druckfolge initialLösung = new Druckfolge();       
@@ -181,6 +207,10 @@ namespace Werkzeugbahnplanung
             return initialLösung;
         }
 
+        
+        /*
+         * Berechnet die Gesamtkosten für eine ganze Druckfolge von Voxeln
+         */
         public double CalculateDistanceAll(Druckfolge druckfolge, List<ushort[]> voxelList, bool isInfill)
         {
             double distanzKosten = 0;
@@ -194,15 +224,32 @@ namespace Werkzeugbahnplanung
                 {
                     uint index2 = druckfolge.GetPriorityItem((i + 1));
                     Voxel v2 = new Voxel(voxelList[(int) index2]);
-                    if (v.IsNeighbor6(v2))
-                        distanzKosten += EudklidDistanzAusVoxelDistanz(v.VoxelKoordinatenDistanz(v2));
-                    else
-                        distanzKosten += ABSETZKOSTEN + EudklidDistanzAusVoxelDistanz(v.VoxelKoordinatenDistanz(v2));
+                    if (!isInfill)
+                    {
+                        if (v.IsNeighbor6(v2))
+                            distanzKosten += EudklidDistanzAusVoxelDistanz(v.VoxelKoordinatenDistanz(v2));
+                        else
+                            distanzKosten += ABSETZKOSTEN + EudklidDistanzAusVoxelDistanz(v.VoxelKoordinatenDistanz(v2));
+                    }
+                    if (isInfill)
+                    {
+                        if (v.IsNeighbor26(v2))
+                            distanzKosten += EudklidDistanzAusVoxelDistanz(v.VoxelKoordinatenDistanz(v2));
+                        else
+                            distanzKosten += ABSETZKOSTEN + EudklidDistanzAusVoxelDistanz(v.VoxelKoordinatenDistanz(v2));
+                    }
                 }
             }                   
             return distanzKosten;
         }
 
+        
+        /*
+         * Führt das tauschen von Kanten durch, so wie es im 2-Opt Algorithmus vorgesehen ist
+         * 1. In-order
+         * 2. Reverse-order
+         * 3. In-order
+         */
         public void _2OptSwap(Druckfolge neueLösung, List<ushort[]> voxelList, bool isInfill, int i, int j)
         {
             Druckfolge swap = new Druckfolge(neueLösung.DeepCopy());
@@ -224,14 +271,20 @@ namespace Werkzeugbahnplanung
             neueLösung.SetGesamtkosten(CalculateDistanceAll(neueLösung, voxelList,isInfill));
         }
         
+        
+        /*
+         * Führt den 2-Opt Algorithmus aus, um eine lokal optimale Bahnplanung zu erreichen
+         */
         public Druckfolge _2Opt(Druckfolge initialLösung, Graph_ graph, bool isInfill)
         {
             Druckfolge _2optLösung = new Druckfolge(initialLösung);
             Druckfolge neueLösung = _2optLösung.DeepCopy();
         
             /*
-             * Instead of iterating through every possible value for i and j, only a few are taken as most of the time
-             * more values don't yield significantly better results while the computing time is going up exponentially.
+             * Die Inkremente für i,j bestimmten fast vollständig die Laufzeit des gesamten Programms und sind deshalb
+             * je nach Fall anzupassen.
+             * Kleine Inkremente: Liefern eine Bahnplanung mit geringeren Kosten, aber die Laufzeit des Programms steigt exponentiell
+             * Große Inkremente: Liefern eine Bahnplanung mit höheren Kosten, aber die Laufzeit bleibt sehr gering
              */
             for (int i = 0; i < graph.GetVoxelKoordinaten().Count; i += graph.GetVoxelKoordinaten().Count / 20)
             {
@@ -246,6 +299,7 @@ namespace Werkzeugbahnplanung
             }          
             return _2optLösung;
         }
+        
         
         public Bahn Bahnplanung(List<Voxel> voxelList, int layerIndex)
         {
@@ -274,7 +328,11 @@ namespace Werkzeugbahnplanung
             Druckfolge optimizedRand = new Druckfolge(0.0);
             Druckfolge optimizedRest = new Druckfolge(0.0);
 
-            for (int NNRUNS = 0; NNRUNS < 5; NNRUNS++)
+            
+            /*
+             * Da nur lokale Optima bestimmt werden, werden mehrere Durchläufe erzeugt, von denen das Beste ausgewählt wird.
+             */
+            for (int NNRUNS = 0; NNRUNS < ANZAHL_NNRUNS; NNRUNS++)
             {
                 Random randomizer = new Random();                
                 int startNodeRand = (randomizer.Next(0, randGraph.GetGraph().Count-1));
@@ -320,7 +378,6 @@ namespace Werkzeugbahnplanung
                 for (int i = 0; i < m_splitList[0].Count; i++)
                 {
                     if (absetzPunkte[i])
-                        //Hier Extrusionsgeschwindigkeit eintragen
                         absetzDouble.Add(extrusionsGeschwindigkeit);
                     else
                         absetzDouble.Add(0);
@@ -344,7 +401,6 @@ namespace Werkzeugbahnplanung
                                      m_layerIndex + " " +
                                      "\r\n");
                 }
-                //outputFile.Write("\r\n");
                 absetzPunkte.Clear();
                 absetzDouble.Clear();
                 index = (int) m_optimizedRest.GetPriorityItem(0);
@@ -354,7 +410,6 @@ namespace Werkzeugbahnplanung
                 for (int i = 0; i < m_splitList[1].Count; i++)
                 {
                     if (absetzPunkte[i])
-                        //Hier Extrusionsgeschwindigkeit eintragen
                         absetzDouble.Add(extrusionsGeschwindigkeit);
                     else
                         absetzDouble.Add(0);

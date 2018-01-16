@@ -11,7 +11,6 @@ namespace Werkzeugbahnplanung
  * (Speicherverbrauch könnte effektiv halbiert werden)
  * Und den Voxelkoordinaten, die die Knoten im Graph repräsentieren.
  */
-    [Serializable]
     public class Graph_
     {
 

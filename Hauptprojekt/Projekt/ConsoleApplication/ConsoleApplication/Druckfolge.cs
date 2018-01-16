@@ -5,7 +5,13 @@ using System.Runtime.Serialization.Formatters.Binary;
 
 namespace Werkzeugbahnplanung
 {
-    [Serializable]
+    /*
+     * Jede Druckfolge besteht aus einer Prioritätsliste die die Indices von Voxeln speichert,
+     * sodass diese in einer bestimmten Reihenfolge abgearbeitet werden können. Außerdem werden die
+     * Gesamtkosten gespeichert die sich durch diesen bestimmten Weg ergeben würden. Die Kosten sind
+     * ein absolutes Maß im Sinne der gefahrenen Distanz. Die Kosten können aber auch verzerrt werden durch die
+     * ABSETZKOSTEN und MARKIERKOSTEN.
+     */
     public class Druckfolge
     {
         private List<uint> m_priority;
