@@ -147,9 +147,11 @@ namespace Werkzeugbahnplanung
                 {
                     for (int z_div = -1; z_div <= 1; z_div++)
                     {
+                        //Alle möglichen Nachbarn eines Voxels werden an diesen Schritt erstellt
                         int neighbor_x = x + x_div;
                         int neighbor_y = y + y_div;
                         int neighbor_z = z + z_div;
+                        //Überprüfung, ob Voxel im Rahmen liegen
                         if (neighbor_x < 0 || neighbor_y < 0 || neighbor_z < 0 || neighbor_x > m_Voxelmatrix.GetUpperBound(0) || neighbor_y > m_Voxelmatrix.GetUpperBound(1) || neighbor_z > m_Voxelmatrix.GetUpperBound(2))
                         {
                             continue;
