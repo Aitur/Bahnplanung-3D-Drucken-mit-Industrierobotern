@@ -45,46 +45,55 @@ namespace Werkzeugbahnplanung
         {
             return m_Schichten[i];
         }
-        
+
         #region InsertInfill
         /*Funktion, die eine Boundingbox eines Infill-Musters
           (derselben Größe(!)) mit dem Voxelmodell merged.
           Bounding-Box : true = Voxel gesetzt im Infill */
         public void InsertInfill(int infillDensity = 20, string infillType = "3DInfill", int offset = 0)
         {
+            double[] counter = new double[2];
+            
             if (infillDensity != 100)
             {
+                counter[0] = 0.0;
                 Infill m_Boundingbox = new Infill(infillDensity, infillType, offset);
                 ushort[] koords = new ushort[3];
                 //Schleifen die über alle Voxel des Modells gehen
                 Parallel.For(0, m_Schichten.Count(), j =>
-                 {
-                     Console.WriteLine("Prozessing infill for layer:" + j);
-                     for (int i = 0; i < m_Schichten[j].Count(); i++)
-                     {
-                    //Voxel die Teil des Randes sind kommen nicht in Frage
-                    if (m_Schichten[j][i].getModellrand() != true)
-                         {
-                             lock (m_Schichten)//Why, just why?
+                {
+                    Console.WriteLine("Prozessing infill for layer:" + j);
+                    for (int i = 0; i < m_Schichten[j].Count(); i++)
+                    {
+                        //Voxel die Teil des Randes sind kommen nicht in Frage
+                        if (m_Schichten[j][i].getModellrand() != true)
                         {
-                                 koords = m_Schichten[j][i].getKoords();
-                            //Falls kein Infill an Stelle des Voxels, lösche diesen
-                            //aus unserem Voxelmodell
-                            if (0 == m_Boundingbox.IsInfill(koords[0], koords[1], koords[2]))
-                                 {
-                                     m_Voxelmatrix[koords[0], koords[1], koords[2]] = null;
-                                     this.m_Schichten[j].Remove(this.m_Schichten[j][i]);
-                                     i--;
-                                 }
-                             }
-                         }
-                     }
-                 });
+                            lock (m_Schichten)
+                            {
+                                koords = m_Schichten[j][i].getKoords();
+                                //Falls kein Infill an Stelle des Voxels, lösche diesen
+                                //aus unserem Voxelmodell
+                                ++counter[0];
+                                if (0 == m_Boundingbox.IsInfill(koords[0], koords[1], koords[2]))
+                                {
+                                    m_Voxelmatrix[koords[0], koords[1], koords[2]] = null;
+                                    this.m_Schichten[j].Remove(this.m_Schichten[j][i]);
+                                    i--;
+                                }
+                                else {
+                                    ++counter[1];
+                                }
+                            }
+                        }
+                    }
+                });
             }
+            counter[0] = counter[1] / counter[0];
+            Console.WriteLine("Actual Infill percentage: "+counter[0]);
         }
         #endregion
-            
-#region Randverbreiterung
+
+        #region Randverbreiterung
         /// <summary>
         /// Diese Methode ist dazu da, um den Modellrand (voll zu druckenden äußeren Bereich) verbreitern.
         /// Der Parameter randBreite soll die gewünschte resultierende Breite dieses Bereiches sein.
@@ -147,11 +156,9 @@ namespace Werkzeugbahnplanung
                 {
                     for (int z_div = -1; z_div <= 1; z_div++)
                     {
-                        //Alle möglichen Nachbarn eines Voxels werden an diesen Schritt erstellt
                         int neighbor_x = x + x_div;
                         int neighbor_y = y + y_div;
                         int neighbor_z = z + z_div;
-                        //Überprüfung, ob Voxel im Rahmen liegen
                         if (neighbor_x < 0 || neighbor_y < 0 || neighbor_z < 0 || neighbor_x > m_Voxelmatrix.GetUpperBound(0) || neighbor_y > m_Voxelmatrix.GetUpperBound(1) || neighbor_z > m_Voxelmatrix.GetUpperBound(2))
                         {
                             continue;
