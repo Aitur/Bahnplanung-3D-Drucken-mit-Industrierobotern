@@ -205,6 +205,7 @@ namespace Werkzeugbahnplanung
             if(z % 2 == 1)
             {
                 x = x + infill_offset;
+                y = y + infill_offset;
             }
             Boolean isEven = (0 == (x / (infill_density + (infill_density / 2) - 1)) % 2);
             x = x % (infill_density + (infill_density / 2) - 1);
