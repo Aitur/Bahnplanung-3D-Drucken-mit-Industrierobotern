@@ -87,13 +87,15 @@ namespace Werkzeugbahnplanung
             m_Modellrand = value;
         }
         
-        //Prüfe ob zwei Voxel benachbart sind
+        //Prüfe ob zwei Voxel über Ecken, Kanten und Flächen benachbart sind
         public bool IsNeighbor26(Voxel a)
         {
-            if (a != null)
+            if (a != null) //der betrachtetze Voxel darf nicht leer sein
             {
-                int[] distanz = this.VoxelKoordinatenDistanz(a);
+                int[] distanz = this.VoxelKoordinatenDistanz(a); 
                 int distanzSumme = distanz[0] + distanz[1] + distanz[2];
+               /*damit zwei Voxel benachbart sind, müssen die Koordinaten jeweils höchstens um eins unterschiedlich sein
+                und deren Summe darf nicht null sein, weil ein Voxel kein Nachbar von sich selbst ist. */
                 if ((distanz[0] <= 1 && distanz[1] <= 1 && distanz[2] <= 1)&&(distanzSumme != 0))
                     return true;
                 else
@@ -104,12 +106,14 @@ namespace Werkzeugbahnplanung
                 return false;
             }
         }
-
+         
+         //Prüft oft zwei Voxel über Flächen benachbart sind.
         public bool IsNeighbor6(Voxel a)
         {
-            if (a != null)
+            if (a != null) //der betrachtete Voxel darf nicht leer sein
             {
                 int[] distanz = this.VoxelKoordinatenDistanz(a);
+               /*Die Distanz zwischen beiden Voxeln muss eine Koordinate in eine einzige Richtung betragen.*/
                 if ((distanz[0] == 0 && distanz[1] == 0 && distanz[2] == 1) ||
                     (distanz[0] == 0 && distanz[1] == 1 && distanz[2] == 0) ||
                     (distanz[0] == 1 && distanz[1] == 0 && distanz[2] == 0))
