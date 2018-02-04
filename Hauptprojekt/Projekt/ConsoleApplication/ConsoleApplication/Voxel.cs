@@ -29,7 +29,8 @@ namespace Werkzeugbahnplanung
             m_orientierung = new double[3]{0.0,0.0,0.0};
         }
       
-         public Voxel(bool schichtrand, bool modellrand, ushort xKoord, ushort yKoord, ushort zKoord, double xOrient, double yOrient, double zOrient )
+         public Voxel(bool schichtrand, bool modellrand, ushort xKoord, ushort yKoord, ushort zKoord, 
+                      double xOrient, double yOrient, double zOrient )
         {
             m_Schichtrand = schichtrand;
             m_Modellrand = modellrand;
